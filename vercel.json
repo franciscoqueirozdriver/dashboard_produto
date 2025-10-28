@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/dashboard" },
+    { "source": "/index.html", "destination": "/dashboard" }
+  ],
+  "headers": [
+    { "source": "/(.*)", "headers": [{ "key": "x-wallboard", "value": "spotter" }] }
+  ]
+}
