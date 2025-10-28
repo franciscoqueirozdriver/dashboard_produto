@@ -22,8 +22,8 @@ const percent = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
 });
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 60;
+export const revalidate = 21600;
+export const dynamic = 'force-static';
 
 export default async function DashboardPage() {
   const metrics = await loadSpotterMetrics();

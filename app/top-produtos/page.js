@@ -7,8 +7,8 @@ const currency = new Intl.NumberFormat('pt-BR', {
   currency: 'BRL',
 });
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 60;
+export const revalidate = 21600;
+export const dynamic = 'force-static';
 
 export default async function TopProdutosPage() {
   const { topProducts } = await loadSpotterMetrics();

@@ -2,8 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusByProductChart } from '@/components/graphs/status-by-product';
 import { loadSpotterMetrics } from '@/lib/spotter/load';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 60;
+export const revalidate = 21600;
+export const dynamic = 'force-static';
 
 export default async function StatusProdutoPage() {
   const { statusByProduct } = await loadSpotterMetrics();
