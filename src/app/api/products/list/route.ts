@@ -1,15 +1,25 @@
 import { NextResponse } from "next/server";
-import { explodeSoldItems, fetchLeadsSold } from "@/lib/spotter/leadsSold";
+import { getLeadsSold, explodeItems } from "@/lib/spotter/leadsSold";
 
 export const revalidate = 21600;
 
-export async function GET(req: Request) {
-  const u = new URL(req.url);
-  const ano = u.searchParams.get("ano") ? Number(u.searchParams.get("ano")) : undefined;
-  const mes = u.searchParams.get("mes") ? Number(u.searchParams.get("mes")) : undefined;
+const SEM_PRODUTO = "Sem produto informado";
 
-  const sales = await fetchLeadsSold({ ano, mes });
-  const items = explodeSoldItems(sales);
-  const set = new Set(items.map((i) => i.productName).filter(Boolean));
-  return NextResponse.json({ ok: true, data: Array.from(set).sort() });
+export async function GET(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const ano = url.searchParams.get("ano") ? Number(url.searchParams.get("ano")) : undefined;
+    const mes = url.searchParams.get("mes") ? Number(url.searchParams.get("mes")) : undefined;
+
+    const sales = await getLeadsSold({ ano, mes });
+    const items = explodeItems(sales);
+    const set = new Set(items.map((i) => (i.productName ?? "").trim()));
+    const data = Array.from(set)
+      .map((produto) => produto || SEM_PRODUTO)
+      .sort((a, b) => a.localeCompare(b));
+    return NextResponse.json({ ok: true, data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro desconhecido";
+    return NextResponse.json({ ok: false, error: message }, { status: 502 });
+  }
 }

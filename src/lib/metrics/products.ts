@@ -1,40 +1,43 @@
-import type { SoldItem } from "../spotter/leadsSold";
+import type { LeadSold, SoldItem } from "../spotter/leadsSold";
 
-export function revenueByProduct(items: SoldItem[]) {
+export function receitaPorProduto(items: SoldItem[]) {
   const m = new Map<string, number>();
   for (const it of items) {
-    if (!it.productName) continue;
-    m.set(it.productName, (m.get(it.productName) ?? 0) + it.finalValue * (it.quantity || 1));
+    const produto = (it.productName ?? "").trim();
+    const atual = m.get(produto) ?? 0;
+    m.set(produto, atual + Number(it.value ?? 0));
   }
-  return Array.from(m, ([label, value]) => ({ key: label, label, value })).sort((a, b) => b.value - a.value);
+  return Array.from(m, ([produto, valor]) => ({ produto, valor })).sort((a, b) => b.valor - a.valor);
 }
 
-export function ticketByProduct(items: SoldItem[]) {
+export function ticketMedioPorProduto(items: SoldItem[]) {
   const receita = new Map<string, number>();
   const vendas = new Map<string, Set<number>>();
   for (const it of items) {
-    if (!it.productName) continue;
-    receita.set(it.productName, (receita.get(it.productName) ?? 0) + it.finalValue * (it.quantity || 1));
-    const set = vendas.get(it.productName) ?? new Set<number>();
+    const produto = (it.productName ?? "").trim();
+    const valor = Number(it.value ?? 0);
+    receita.set(produto, (receita.get(produto) ?? 0) + valor);
+    const set = vendas.get(produto) ?? new Set<number>();
     set.add(it.saleId);
-    vendas.set(it.productName, set);
+    vendas.set(produto, set);
   }
-  return Array.from(receita, ([prod, sum]) => {
-    const nVendas = vendas.get(prod)?.size ?? 0;
-    return { key: prod, label: prod, value: nVendas ? sum / nVendas : 0 };
-  }).sort((a, b) => b.value - a.value);
+  return Array.from(receita, ([produto, sum]) => {
+    const n = vendas.get(produto)?.size ?? 0;
+    return { produto, ticketMedio: n ? sum / n : 0 };
+  }).sort((a, b) => b.ticketMedio - a.ticketMedio);
 }
 
-export function statusByProduct(items: SoldItem[], salesStageById: Map<number, string>) {
+export function statusPorProduto(items: SoldItem[], sales: LeadSold[]) {
+  const stageBySale = new Map<number, string>(sales.map((s) => [s.id, String(s.saleStage || "")]));
   const m = new Map<string, { ganho: number; perdido: number; emAndamento: number }>();
   for (const it of items) {
-    if (!it.productName) continue;
-    const st = salesStageById.get(it.saleId) ?? "";
-    const rec = m.get(it.productName) ?? { ganho: 0, perdido: 0, emAndamento: 0 };
-    if (/ganh|won|fechad.*ganho/i.test(st)) rec.ganho++;
-    else if (/perd|lost|fechad.*perdid/i.test(st)) rec.perdido++;
-    else rec.emAndamento++;
-    m.set(it.productName, rec);
+    const produto = (it.productName ?? "").trim();
+    const st = stageBySale.get(it.saleId) || "";
+    const obj = m.get(produto) ?? { ganho: 0, perdido: 0, emAndamento: 0 };
+    if (/ganh|won|fechad.*ganho/i.test(st)) obj.ganho++;
+    else if (/perd|lost|fechad.*perdid/i.test(st)) obj.perdido++;
+    else obj.emAndamento++;
+    m.set(produto, obj);
   }
   return Array.from(m, ([produto, v]) => ({ produto, ...v }));
 }
