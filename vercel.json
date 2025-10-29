@@ -1,4 +1,7 @@
 {
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
   "rewrites": [
     { "source": "/", "destination": "/dashboard" },
     { "source": "/index.html", "destination": "/dashboard" }
