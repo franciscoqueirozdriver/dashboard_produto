@@ -3,8 +3,9 @@ import { PerformanceLine } from '@/components/graphs/performance-line';
 import { SalesByMonthChart } from '@/components/graphs/monthly-sales';
 import { loadSpotterMetrics } from '@/lib/spotter/load';
 
-export const revalidate = 21600;
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const runtime = 'nodejs';
 
 export default async function PerformancePage() {
   let performanceLine, salesByMonth;

@@ -8,8 +8,9 @@ const currency = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 0,
 });
 
-export const revalidate = 21600;
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const runtime = 'nodejs';
 
 export default async function TicketMedioPage() {
   let averageTicketByProduct;
