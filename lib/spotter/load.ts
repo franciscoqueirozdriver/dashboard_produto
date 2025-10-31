@@ -82,7 +82,8 @@ export async function loadSpotterMetrics(period: Period = 'last12Months') {
     leads: [],
     leadsSold: [],
     losts: [],
-    productsDictionary: [],
+    recommendedProducts: [],
+    products: [],
   });
 
   const dataset = buildDataset(rawData);
