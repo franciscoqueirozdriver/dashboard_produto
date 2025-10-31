@@ -8,7 +8,8 @@ import { StatusByProductChart } from '@/components/graphs/status-by-product';
 import { TopProductsChart } from '@/components/graphs/top-products';
 import { AverageTicketChart } from '@/components/graphs/average-ticket';
 import { DiscardReasonsChart } from '@/components/graphs/discard-reasons';
-import { loadSpotterMetrics } from '@/lib/spotter/load';
+import { loadDashboardMetrics } from '@/lib/spotter/load';
+import { DashboardRotator } from '@/components/dashboard-rotator';
 
 const currency = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -26,7 +27,14 @@ export const revalidate = 21600;
 export const dynamic = 'force-static';
 
 export default async function DashboardPage() {
-  const metrics = await loadSpotterMetrics();
+  const allMetrics = await loadDashboardMetrics();
+
+  return (
+    <DashboardRotator allMetrics={allMetrics} />
+  );
+}
+
+function DashboardContent({ metrics, periodTitle, periodDescription }) {
   const {
     summary,
     performanceLine,
@@ -52,14 +60,17 @@ export default async function DashboardPage() {
   return (
     <main className="space-y-12 px-12 py-10">
       <header className="flex flex-col gap-4">
-        <h1 className="text-5xl font-bold tracking-tight text-foreground">Painel Geral</h1>
+        <h1 className="text-5xl font-bold tracking-tight text-foreground">
+          Painel Geral
+          <span className="ml-4 text-3xl text-muted-foreground/80">({periodTitle})</span>
+        </h1>
         <p className="text-xl text-muted-foreground max-w-3xl">
-          Monitoramento em tempo real do funil comercial nos últimos 12 meses com dados oficiais da Exact Spotter.
+          {periodDescription}
         </p>
       </header>
 
       <section className="grid gap-6 xl:grid-cols-5">
-        <KpiCard title="Total de Vendas" value={summary.totalSales.toLocaleString('pt-BR')} description="Pedidos fechados em 12 meses" />
+        <KpiCard title="Total de Vendas" value={summary.totalSales.toLocaleString('pt-BR')} description="Pedidos fechados" />
         <KpiCard title="Receita Total" value={currency.format(summary.revenue)} description="Valor somado das negociações" />
         <KpiCard title="Ticket Médio" value={currency.format(summary.averageTicket)} description="Ticket médio por venda" />
         <KpiCard title="Leads Criados" value={summary.leadsCreated.toLocaleString('pt-BR')} description="Novos leads cadastrados" />
