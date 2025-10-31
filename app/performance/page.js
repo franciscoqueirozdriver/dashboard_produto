@@ -1,33 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PerformanceLine } from '@/components/graphs/performance-line';
 import { SalesByMonthChart } from '@/components/graphs/monthly-sales';
-import { loadSpotterMetrics } from '@/lib/spotter/load';
+import { loadSpotterMetrics } from '@/lib/spotter/load.ts';
 
 export const revalidate = 21600;
 export const dynamic = 'force-static';
 
 export default async function PerformancePage() {
-  let performanceLine, salesByMonth;
-  try {
-    ({ performanceLine, salesByMonth } = await loadSpotterMetrics());
-  } catch (error) {
-    console.error('[performance] failed to load spotter metrics:', error);
-    return (
-      <main className="space-y-10 px-12 py-10">
-        <header className="flex flex-col gap-4">
-          <h1 className="text-5xl font-bold tracking-tight">Performance de Vendas</h1>
-          <p className="text-xl text-muted-foreground max-w-4xl">
-            Análise detalhada da performance de vendas e receita da sua equipe nos últimos 12 meses.
-          </p>
-        </header>
-        <div className="flex items-center justify-center h-96">
-          <p className="text-2xl text-destructive">
-            Não foi possível carregar os dados do Spotter. Verifique o token e tente novamente.
-          </p>
-        </div>
-      </main>
-    );
-  }
+  const { performanceLine, salesByMonth } = await loadSpotterMetrics();
 
   return (
     <main className="space-y-10 px-12 py-10">

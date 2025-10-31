@@ -1,4 +1,5 @@
-import { getSpotterDataset } from '@/lib/spotter';
+import { safe } from '@/lib/safe';
+import { getSpotterDataset, Period } from '@/lib/spotter/api';
 import {
   buildDataset,
   getAverageTicketByProduct,
@@ -38,7 +39,7 @@ function assembleMetrics(dataset) {
         set.add(entry.reason);
       }
       return set;
-    }, new Set())
+    }, new Set<string>())
   );
 
   if (!discardReasonKeys.length) {
@@ -76,8 +77,24 @@ function assembleMetrics(dataset) {
   };
 }
 
-export async function loadSpotterMetrics() {
-  const rawData = await getSpotterDataset();
+export async function loadSpotterMetrics(period: Period = 'last12Months') {
+  const rawData = await safe(getSpotterDataset(period), {
+    leads: [],
+    leadsSold: [],
+    losts: [],
+    productsDictionary: [],
+  });
+
   const dataset = buildDataset(rawData);
   return assembleMetrics(dataset);
+}
+
+export async function loadDashboardMetrics() {
+  const [currentMonth, currentYear, last12Months] = await Promise.all([
+    loadSpotterMetrics('currentMonth'),
+    loadSpotterMetrics('currentYear'),
+    loadSpotterMetrics('last12Months'),
+  ]);
+
+  return { currentMonth, currentYear, last12Months };
 }
