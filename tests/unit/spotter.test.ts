@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { fetchSpotter } from '@/lib/spotter';
+vi.mock('server-only', () => ({}), { virtual: true });
 
 declare const global: typeof globalThis;
 
-describe('fetchSpotter', () => {
+describe('spotter api', () => {
   const originalEnv = { ...process.env };
   let fetchMock: ReturnType<typeof vi.fn>;
-  let consoleSpy: ReturnType<typeof vi.spyOn>;
+  let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.resetModules();
@@ -15,44 +15,79 @@ describe('fetchSpotter', () => {
     fetchMock = vi.fn();
     // @ts-expect-error allow override for tests
     global.fetch = fetchMock;
-    consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
     process.env = { ...originalEnv };
-    consoleSpy.mockRestore();
+    warnSpy.mockRestore();
     // @ts-expect-error cleanup
     delete global.fetch;
   });
 
-  it('returns empty value and logs when TOKEN_EXACT is missing', async () => {
+  it('warns and returns empty array when TOKEN_EXACT is missing', async () => {
     delete process.env.TOKEN_EXACT;
 
-    const result = await fetchSpotter('/Leads');
+    const { getFunnelActivity } = await import('@/lib/spotter/api');
+    const result = await getFunnelActivity({ dataInicial: '2025-01-01', dataFinal: '2025-01-31' });
 
-    expect(result).toEqual({ value: [] });
-    expect(consoleSpy).toHaveBeenCalledWith('[SPOTTER] TOKEN_EXACT ausente');
+    expect(result).toEqual([]);
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith('[Spotter] TOKEN_EXACT ausente');
   });
 
-  it('returns empty value and logs when response is not ok', async () => {
+  it('warns and returns empty array when response is not ok', async () => {
     process.env.TOKEN_EXACT = 'test-token';
-    process.env.SPOTTER_BASE_URL = 'https://example.com';
 
     fetchMock.mockResolvedValue({
       ok: false,
       status: 500,
-      text: vi.fn().mockResolvedValue('server error'),
+      statusText: 'Internal Error',
     });
 
-    const result = await fetchSpotter('/Leads');
+    const { getFunnelActivity } = await import('@/lib/spotter/api');
+    const params = { dataInicial: '2025-01-01', dataFinal: '2025-01-31' };
+    const result = await getFunnelActivity(params);
 
-    expect(result).toEqual({ value: [] });
-    expect(consoleSpy).toHaveBeenCalledWith(
-      '[SPOTTER] FAIL',
-      500,
-      'https://example.com/Leads',
-      'server error'
+    expect(result).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.exactspotter.com/v3/FunnelActivity?dataInicial=2025-01-01&dataFinal=2025-01-31',
+      expect.objectContaining({
+        headers: expect.objectContaining({ token_exact: 'test-token' }),
+      })
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[Spotter] 500 Internal Error: /FunnelActivity?dataInicial=2025-01-01&dataFinal=2025-01-31'
+    );
+  });
+
+  it('resolves values when API succeeds', async () => {
+    process.env.TOKEN_EXACT = 'success-token';
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: vi.fn().mockResolvedValue({
+        value: [{ id: 1 }],
+        '@odata.nextLink': undefined,
+      }),
+    });
+
+    const { getSellerPerformance } = await import('@/lib/spotter/api');
+    const params = { dataInicial: '2025-01-01', dataFinal: '2025-01-31' };
+    const result = await getSellerPerformance(params);
+
+    expect(result).toEqual([{ id: 1 }]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.exactspotter.com/v3/SellerPerformance?dataInicial=2025-01-01&dataFinal=2025-01-31',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          token_exact: 'success-token',
+          'Content-Type': 'application/json',
+        }),
+        cache: 'no-store',
+      })
     );
   });
 });
