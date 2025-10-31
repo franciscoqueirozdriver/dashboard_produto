@@ -74,7 +74,7 @@ export async function getLeads(period: Period = 'last12Months', params?: Record<
 
 export async function getLeadsSold(period: Period = 'last12Months', params?: Record<string, unknown>) {
   return fetchPaginated('/LeadsSold', {
-    $select: 'leadId,saleDate,totalDealValue,saleStage',
+    $select: 'leadId,saleDate,totalDealValue,saleStage,products',
     $filter: `saleDate ge ${getPeriod(period)}`,
     ...(params || {}),
   });
@@ -94,7 +94,7 @@ export async function getSpotterDataset(period: Period = 'last12Months') {
       $filter: `registerDate ge ${getPeriod(period)}`,
     })), { value: [] }),
     safe(fetchSpotter<any>('/LeadsSold', buildQuery({
-      $select: 'leadId,saleDate,totalDealValue,saleStage',
+      $select: 'leadId,saleDate,totalDealValue,saleStage,products',
       $filter: `saleDate ge ${getPeriod(period)}`,
     })), { value: [] }),
     safe(fetchSpotter<any>('/Losts', buildQuery({
