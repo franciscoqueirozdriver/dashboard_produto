@@ -47,8 +47,8 @@ export async function getFunnelActivity(params: {
   funilId?: number;
 }) {
   const q = new URLSearchParams({
-    dataInicial: params.dataInicial,
-    dataFinal: params.dataFinal,
+    datainicial: params.dataInicial,
+    datafinal: params.dataFinal,
     ...(params.funilId ? { funilId: String(params.funilId) } : {}),
   });
   return fetchPaged<any>(`/FunnelActivity?${q.toString()}`);
@@ -60,8 +60,8 @@ export async function getSellerPerformance(params: {
   funilId?: number;
 }) {
   const q = new URLSearchParams({
-    dataInicial: params.dataInicial,
-    dataFinal: params.dataFinal,
+    datainicial: params.dataInicial,
+    datafinal: params.dataFinal,
     ...(params.funilId ? { funilId: String(params.funilId) } : {}),
   });
   return fetchPaged<any>(`/SellerPerformance?${q.toString()}`);
@@ -73,8 +73,8 @@ export async function getPreSalesPerformance(params: {
   funilId?: number;
 }) {
   const q = new URLSearchParams({
-    dataInicial: params.dataInicial,
-    dataFinal: params.dataFinal,
+    datainicial: params.dataInicial,
+    datafinal: params.dataFinal,
     ...(params.funilId ? { funilId: String(params.funilId) } : {}),
   });
   return fetchPaged<any>(`/PreSalesPerformance?${q.toString()}`);
@@ -86,8 +86,8 @@ export async function getSellersMetrics(params: {
   funilId?: number;
 }) {
   const q = new URLSearchParams({
-    dataInicial: params.dataInicial,
-    dataFinal: params.dataFinal,
+    datainicial: params.dataInicial,
+    datafinal: params.dataFinal,
     ...(params.funilId ? { funilId: String(params.funilId) } : {}),
   });
   return fetchPaged<any>(`/SellersMetrics?${q.toString()}`);
@@ -99,8 +99,8 @@ export async function getMonthlyDealForecast(params: {
   funilId?: number;
 }) {
   const q = new URLSearchParams({
-    dataInicial: params.dataInicial,
-    dataFinal: params.dataFinal,
+    datainicial: params.dataInicial,
+    datafinal: params.dataFinal,
     ...(params.funilId ? { funilId: String(params.funilId) } : {}),
   });
   return fetchPaged<any>(`/MonthlyDealForecast?${q.toString()}`);
