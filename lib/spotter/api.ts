@@ -57,7 +57,7 @@ export async function getLeads(params?: Record<string, unknown>) {
 
 export async function getLeadsSold(params?: Record<string, unknown>) {
   return fetchPaginated('/LeadsSold', {
-    $select: 'leadId,saleDate,totalDealValue,saleStage',
+    $select: 'leadId,saleDate,totalDealValue,saleStage,product',
     $filter: `saleDate ge ${getPeriodStart()}`,
     ...(params || {}),
   });
@@ -77,7 +77,7 @@ export async function getSpotterDataset() {
       $filter: `registerDate ge ${getPeriodStart()}`,
     })), { value: [] }),
     safe(fetchSpotter<any>('/LeadsSold', buildQuery({
-      $select: 'leadId,saleDate,totalDealValue,saleStage',
+      $select: 'leadId,saleDate,totalDealValue,saleStage,product',
       $filter: `saleDate ge ${getPeriodStart()}`,
     })), { value: [] }),
     safe(fetchSpotter<any>('/Losts', buildQuery({
