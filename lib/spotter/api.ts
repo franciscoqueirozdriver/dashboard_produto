@@ -88,9 +88,8 @@ export async function getLosts(period: Period = 'last12Months', params?: Record<
   });
 }
 
-export async function getRecommendedProducts(period: Period = 'last12Months', params?: Record<string, unknown>) {
+export async function getRecommendedProducts(params?: Record<string, unknown>) {
   return fetchPaginated('/RecommendedProducts', {
-    $filter: `date ge ${getPeriod(period)}`,
     ...(params || {}),
   });
 }
@@ -114,9 +113,7 @@ export async function getSpotterDataset(period: Period = 'last12Months') {
       $select: 'leadId,date,reason',
       $filter: `date ge ${getPeriod(period)}`,
     })), { value: [] }),
-    safe(fetchSpotter<any>('/RecommendedProducts', buildQuery({
-      $filter: `date ge ${getPeriod(period)}`,
-    })), { value: [] }),
+    safe(fetchSpotter<any>('/RecommendedProducts', buildQuery({})), { value: [] }),
     safe(fetchSpotter<any>('/Products', buildQuery({})), { value: [] }),
   ]);
 
