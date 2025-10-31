@@ -8,7 +8,7 @@ import { StatusByProductChart } from '@/components/graphs/status-by-product';
 import { TopProductsChart } from '@/components/graphs/top-products';
 import { AverageTicketChart } from '@/components/graphs/average-ticket';
 import { DiscardReasonsChart } from '@/components/graphs/discard-reasons';
-import { loadDashboardMetrics } from '@/lib/spotter/load';
+import { loadDashboardMetrics } from '@/lib/spotter/load.ts';
 import { DashboardRotator } from '@/components/dashboard-rotator';
 
 const currency = new Intl.NumberFormat('pt-BR', {
