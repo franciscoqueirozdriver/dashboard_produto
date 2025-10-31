@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { Inter } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import AutoRotate from '@/components/auto-rotate';
-import ClientErrorListener from './_client-error-listener';
+
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -17,7 +17,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={cn('bg-background text-foreground min-h-screen font-sans', inter.className)}>
-        <ClientErrorListener />
+
         <Suspense
           fallback={
             <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
@@ -31,3 +31,5 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+
+// Forçando a atualização do arquivo para invalidar o cache do Vercel
