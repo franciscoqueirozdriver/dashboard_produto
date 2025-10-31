@@ -39,7 +39,7 @@ function assembleMetrics(dataset) {
         set.add(entry.reason);
       }
       return set;
-    }, new Set())
+    }, new Set<string>())
   );
 
   if (!discardReasonKeys.length) {
@@ -48,7 +48,7 @@ function assembleMetrics(dataset) {
 
   const discardChartData = discardReasons.length
     ? discardReasons.map((item) => {
-        const row = { product: item.product };
+        const row: { [key: string]: any } = { product: item.product };
         for (const key of discardReasonKeys) {
           row[key] = 0;
         }

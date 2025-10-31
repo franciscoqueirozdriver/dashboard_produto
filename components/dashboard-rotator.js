@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { DashboardContent } from '@/app/dashboard/page';
+import { DashboardContent } from '@/components/dashboard-content';
 
 const VIEWS = [
   {
