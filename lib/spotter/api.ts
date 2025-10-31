@@ -1,11 +1,28 @@
 import { fetchSpotter, type OData } from '@/lib/spotter';
 import { safe } from '@/lib/safe';
 
-function getPeriodStart(months = 12) {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setMonth(date.getMonth() - months);
-  return date.toISOString();
+export type Period = 'currentMonth' | 'currentYear' | 'last12Months';
+
+function getPeriod(period: Period = 'last12Months') {
+  const now = new Date();
+  let startDate: Date;
+
+  switch (period) {
+    case 'currentMonth':
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+    case 'currentYear':
+      startDate = new Date(now.getFullYear(), 0, 1);
+      break;
+    case 'last12Months':
+    default:
+      startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - 12);
+      break;
+  }
+
+  startDate.setHours(0, 0, 0, 0);
+  return startDate.toISOString();
 }
 
 function buildQuery(params?: Record<string, unknown>) {
@@ -48,41 +65,41 @@ async function fetchPaginated<T>(path: string, params?: Record<string, unknown>)
   return data;
 }
 
-export async function getLeads(params?: Record<string, unknown>) {
+export async function getLeads(period: Period = 'last12Months', params?: Record<string, unknown>) {
   return fetchPaginated('/Leads', {
-    $filter: `registerDate ge ${getPeriodStart()}`,
+    $filter: `registerDate ge ${getPeriod(period)}`,
     ...(params || {}),
   });
 }
 
-export async function getLeadsSold(params?: Record<string, unknown>) {
+export async function getLeadsSold(period: Period = 'last12Months', params?: Record<string, unknown>) {
   return fetchPaginated('/LeadsSold', {
-    $select: 'leadId,saleDate,totalDealValue,saleStage',
-    $filter: `saleDate ge ${getPeriodStart()}`,
+    $select: 'leadId,saleDate,totalDealValue,saleStage,products',
+    $filter: `saleDate ge ${getPeriod(period)}`,
     ...(params || {}),
   });
 }
 
-export async function getLosts(params?: Record<string, unknown>) {
+export async function getLosts(period: Period = 'last12Months', params?: Record<string, unknown>) {
   return fetchPaginated('/Losts', {
     $select: 'leadId,date,reason',
-    $filter: `date ge ${getPeriodStart()}`,
+    $filter: `date ge ${getPeriod(period)}`,
     ...(params || {}),
   });
 }
 
-export async function getSpotterDataset() {
+export async function getSpotterDataset(period: Period = 'last12Months') {
   const [{ value: leads }, { value: leadsSold }, { value: losts }] = await Promise.all([
     safe(fetchSpotter<any>('/Leads', buildQuery({
-      $filter: `registerDate ge ${getPeriodStart()}`,
+      $filter: `registerDate ge ${getPeriod(period)}`,
     })), { value: [] }),
     safe(fetchSpotter<any>('/LeadsSold', buildQuery({
-      $select: 'leadId,saleDate,totalDealValue,saleStage',
-      $filter: `saleDate ge ${getPeriodStart()}`,
+      $select: 'leadId,saleDate,totalDealValue,saleStage,products',
+      $filter: `saleDate ge ${getPeriod(period)}`,
     })), { value: [] }),
     safe(fetchSpotter<any>('/Losts', buildQuery({
       $select: 'leadId,date,reason',
-      $filter: `date ge ${getPeriodStart()}`,
+      $filter: `date ge ${getPeriod(period)}`,
     })), { value: [] }),
   ]);
 
