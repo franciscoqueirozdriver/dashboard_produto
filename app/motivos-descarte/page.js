@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DiscardReasonsChart } from '@/components/graphs/discard-reasons';
-import { loadSpotterMetrics } from '@/lib/spotter/load';
+import { loadSpotterMetrics } from '@/lib/spotter/load.ts';
 
 export const revalidate = 21600;
 export const dynamic = 'force-static';

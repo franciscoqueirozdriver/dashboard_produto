@@ -88,8 +88,21 @@ export async function getLosts(period: Period = 'last12Months', params?: Record<
   });
 }
 
+export async function getRecommendedProducts(period: Period = 'last12Months', params?: Record<string, unknown>) {
+  return fetchPaginated('/RecommendedProducts', {
+    $filter: `date ge ${getPeriod(period)}`,
+    ...(params || {}),
+  });
+}
+
+export async function getProducts(params?: Record<string, unknown>) {
+  return fetchPaginated('/Products', {
+    ...(params || {}),
+  });
+}
+
 export async function getSpotterDataset(period: Period = 'last12Months') {
-  const [{ value: leads }, { value: leadsSold }, { value: losts }] = await Promise.all([
+  const [{ value: leads }, { value: leadsSold }, { value: losts }, { value: recommendedProducts }, { value: products }] = await Promise.all([
     safe(fetchSpotter<any>('/Leads', buildQuery({
       $filter: `registerDate ge ${getPeriod(period)}`,
     })), { value: [] }),
@@ -101,8 +114,12 @@ export async function getSpotterDataset(period: Period = 'last12Months') {
       $select: 'leadId,date,reason',
       $filter: `date ge ${getPeriod(period)}`,
     })), { value: [] }),
+    safe(fetchSpotter<any>('/RecommendedProducts', buildQuery({
+      $filter: `date ge ${getPeriod(period)}`,
+    })), { value: [] }),
+    safe(fetchSpotter<any>('/Products', buildQuery({})), { value: [] }),
   ]);
 
-  return { leads, leadsSold, losts, productsDictionary: [] as any[] };
+  return { leads, leadsSold, losts, recommendedProducts, products };
 }
 
