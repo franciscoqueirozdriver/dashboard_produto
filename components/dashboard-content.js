@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import { KpiCard } from '@/components/cards/kpi-card';
 import { MiniChartCard } from '@/components/cards/mini-chart-card';

@@ -48,7 +48,7 @@ function assembleMetrics(dataset) {
 
   const discardChartData = discardReasons.length
     ? discardReasons.map((item) => {
-        const row = { product: item.product };
+        const row: { [key: string]: any } = { product: item.product };
         for (const key of discardReasonKeys) {
           row[key] = 0;
         }
@@ -82,7 +82,8 @@ export async function loadSpotterMetrics(period: Period = 'last12Months') {
     leads: [],
     leadsSold: [],
     losts: [],
-    productsDictionary: [],
+    recommendedProducts: [],
+    products: [],
   });
 
   const dataset = buildDataset(rawData);
