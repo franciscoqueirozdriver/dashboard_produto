@@ -20,6 +20,7 @@ async function fetchJson<T>(endpoint: string): Promise<T> {
   }
   const res = await fetch(`${BASE}${endpoint}`, { headers: headers(), cache: 'no-store' });
   if (!res.ok) {
+
     console.warn(`[Spotter] ${res.status} ${res.statusText}: ${endpoint}`);
     return ([] as unknown) as T;
   }
