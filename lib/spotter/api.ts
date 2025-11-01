@@ -3,7 +3,11 @@ import { safe } from '@/lib/safe';
 
 export type Period = 'currentMonth' | 'currentYear' | 'last12Months';
 
-function getPeriod(period: Period = 'last12Months') {
+export type Stage = {
+  funnelId: string;
+};
+
+function getDateRange(period: Period = 'last12Months') {
   const now = new Date();
   let startDate: Date;
 
@@ -22,7 +26,21 @@ function getPeriod(period: Period = 'last12Months') {
   }
 
   startDate.setHours(0, 0, 0, 0);
+  return { startDate, endDate: now };
+}
+
+function getPeriod(period: Period = 'last12Months') {
+  const { startDate } = getDateRange(period);
   return startDate.toISOString();
+}
+
+function getFunnelActivityDateRange(period: Period = 'last12Months') {
+  const { startDate, endDate } = getDateRange(period);
+  const toYYYYMMDD = (d: Date) => d.toISOString().split('T')[0];
+  return {
+    dataInicial: toYYYYMMDD(startDate),
+    dataFinal: toYYYYMMDD(endDate),
+  };
 }
 
 function buildQuery(params?: Record<string, unknown>) {
@@ -68,6 +86,25 @@ async function fetchPaginated<T>(path: string, params?: Record<string, unknown>)
 export async function getLeads(period: Period = 'last12Months', params?: Record<string, unknown>) {
   return fetchPaginated('/Leads', {
     $filter: `registerDate ge ${getPeriod(period)}`,
+    ...(params || {}),
+  });
+}
+
+export async function getFunnelActivity(period: Period = 'last12Months', funnelId?: string) {
+  const { dataInicial, dataFinal } = getFunnelActivityDateRange(period);
+  const params: Record<string, unknown> = {
+    dataInicial,
+    dataFinal,
+    $select: 'name,converted,discarded,previousGate,id',
+  };
+  if (funnelId) {
+    params.funilId = funnelId;
+  }
+  return fetchPaginated('/FunnelActivity', params);
+}
+
+export async function getStages(params?: Record<string, unknown>): Promise<Stage[]> {
+  return fetchPaginated<Stage>('/stages', {
     ...(params || {}),
   });
 }
