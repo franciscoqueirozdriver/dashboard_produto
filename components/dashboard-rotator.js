@@ -24,7 +24,13 @@ const VIEWS = [
 
 const DEFAULT_DURATION = 30000; // 30 segundos em milissegundos
 
-export function DashboardRotator({ allMetrics, showFloatingFab = false }) {
+export function DashboardRotator({
+  allMetrics,
+  showFloatingFab = false,
+  selectedFunnels = [],
+  funnelsExplicit = false,
+  hasActiveFunnels = true,
+}) {
   const [currentViewIndex, setCurrentViewIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const searchParams = useSearchParams();
@@ -71,6 +77,9 @@ export function DashboardRotator({ allMetrics, showFloatingFab = false }) {
         metrics={metrics}
         periodTitle={currentView.title}
         periodDescription={currentView.description}
+        selectedFunnels={selectedFunnels}
+        funnelsExplicit={funnelsExplicit}
+        hasActiveFunnels={hasActiveFunnels}
       />
       {/* Botão flutuante para pausar/retomar a rotação (visível apenas em modo debug ou quando solicitado) */}
       {isRotatorEnabled && (showFloatingFab || debugControlsEnabled) && (

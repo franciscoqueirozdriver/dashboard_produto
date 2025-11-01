@@ -1,5 +1,6 @@
 import { fetchSpotter, type OData } from '@/lib/spotter';
 import { safe } from '@/lib/safe';
+import { fetchActiveFunnels } from '@/lib/exactspotter/funnels';
 
 
 export type Period = 'currentMonth' | 'currentYear' | 'last12Months' | 'custom';
@@ -133,43 +134,86 @@ export async function getProducts(params?: Record<string, unknown>) {
   });
 }
 
-export async function getSpotterDataset(period: Period = 'currentYear', from?: string, to?: string) {
-  const funnelFilter = 'funnelId eq 22783';
+export async function getSpotterDataset(
+  period: Period = 'currentYear',
+  from?: string,
+  to?: string,
+  funnelIds?: number[]
+) {
+  let resolvedFunnels = funnelIds;
 
-  // Etapa 1: Buscar todos os leads do funil especificado.
-  const leads = await safe(fetchPaginated<any>('/Leads', {
-    $filter: getLeadFilterDate(period, from, to) + ' and ' + funnelFilter,
-  }), []);
+  if (resolvedFunnels === undefined) {
+    const activeFunnels = await fetchActiveFunnels();
+    resolvedFunnels = activeFunnels.map((item) => item.id);
+  }
 
-  // Etapa 2: Extrair IDs dos leads. Se não houver leads, não há necessidade de buscar vendas ou perdas.
-  const leadIds = leads.map((lead: any) => lead.id).filter(Boolean);
+  const funnels = Array.isArray(resolvedFunnels)
+    ? Array.from(new Set(resolvedFunnels.filter((id) => Number.isFinite(id))))
+    : [];
+
+  if (funnels.length === 0) {
+    return {
+      leads: [],
+      leadsSold: [],
+      losts: [],
+      recommendedProducts: [],
+      products: [],
+    };
+  }
+
+  const leadBatches = await Promise.all(
+    funnels.map((funnelId) =>
+      safe(
+        fetchPaginated<any>('/Leads', {
+          $filter: `${getLeadFilterDate(period, from, to)} and funnelId eq ${funnelId}`,
+        }),
+        []
+      )
+    )
+  );
+
+  const leadMap = new Map<number, any>();
+  for (const batch of leadBatches) {
+    for (const lead of batch) {
+      const id = lead?.id;
+      if (!Number.isFinite(id)) continue;
+      if (!leadMap.has(id)) {
+        leadMap.set(id, lead);
+      }
+    }
+  }
+
+  const leads = Array.from(leadMap.values());
+
+  const leadIds = Array.from(leadMap.keys());
   if (leadIds.length === 0) {
     const products = await safe(fetchPaginated<any>('/Products'), []);
     return { leads, leadsSold: [], losts: [], recommendedProducts: [], products };
   }
 
-  // Garantir que os IDs sejam únicos para a consulta 'in'.
-  const uniqueLeadIds = Array.from(new Set(leadIds));
-  const leadIdFilter = `leadId in (${uniqueLeadIds.join(',')})`;
+  const leadIdFilter = `leadId in (${leadIds.join(',')})`;
 
-  // Etapa 3: Buscar dados relacionados (vendas, perdas, produtos) em paralelo usando os IDs dos leads.
-  const [
-    leadsSold,
-    losts,
-    recommendedProducts,
-    products,
-  ] = await Promise.all([
-    safe(fetchPaginated<any>('/LeadsSold', {
-      $select: 'leadId,saleDate,totalDealValue,saleStage,products',
-      $filter: getSaleFilterDate(period, from, to) + ' and ' + leadIdFilter,
-    }), []),
-    safe(fetchPaginated<any>('/LeadsDiscarded', {
-      $select: 'leadId,date,reason',
-      $filter: getFilterDate(period, from, to) + ' and ' + leadIdFilter,
-    }), []),
-    safe(fetchPaginated<any>('/RecommendedProducts', {
-      $filter: leadIdFilter,
-    }), []),
+  const [leadsSold, losts, recommendedProducts, products] = await Promise.all([
+    safe(
+      fetchPaginated<any>('/LeadsSold', {
+        $select: 'leadId,saleDate,totalDealValue,saleStage,products',
+        $filter: `${getSaleFilterDate(period, from, to)} and ${leadIdFilter}`,
+      }),
+      []
+    ),
+    safe(
+      fetchPaginated<any>('/LeadsDiscarded', {
+        $select: 'leadId,date,reason',
+        $filter: `${getFilterDate(period, from, to)} and ${leadIdFilter}`,
+      }),
+      []
+    ),
+    safe(
+      fetchPaginated<any>('/RecommendedProducts', {
+        $filter: leadIdFilter,
+      }),
+      []
+    ),
     safe(fetchPaginated<any>('/Products'), []),
   ]);
 

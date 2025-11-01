@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TopProductsChart } from '@/components/graphs/top-products';
 import { loadSpotterMetrics } from '@/lib/spotter/load';
 import { CardSkeleton } from '@/components/ui/card-skeleton';
+import { resolveFunnelSelection } from '@/lib/exactspotter/funnels';
+import FunnelPickerControl from '@/components/FunnelPickerControl';
+import { FunnelsEmptyState } from '@/components/funnels-empty-state';
 
 const currency = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -12,8 +15,8 @@ const currency = new Intl.NumberFormat('pt-BR', {
 export const revalidate = 21600;
 export const dynamic = 'force-dynamic';
 
-async function ProductData() {
-  const { topProducts } = await loadSpotterMetrics();
+async function ProductData({ funnels }) {
+  const { topProducts } = await loadSpotterMetrics('currentYear', funnels);
   return (
     <>
       <Card>
@@ -41,19 +44,34 @@ async function ProductData() {
   );
 }
 
-export default function TopProdutosPage() {
+export default async function TopProdutosPage({ searchParams }) {
+  const { selectedIds, explicit, available } = await resolveFunnelSelection(searchParams);
+  const hasActive = available.length > 0;
+  const hasSelection = selectedIds.length > 0;
+  const showEmptyState = !hasSelection && (explicit || !hasActive);
+  const emptyMessage = hasActive
+    ? 'Selecione ao menos um funil para visualizar os dados.'
+    : 'Nenhum funil ativo disponível no momento.';
+
   return (
     <main className="space-y-10 px-12 py-10">
       <header className="flex flex-col gap-4">
-        <h1 className="text-5xl font-bold tracking-tight">Top Produtos Vendidos</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-5xl font-bold tracking-tight">Top Produtos Vendidos</h1>
+          <FunnelPickerControl value={selectedIds} />
+        </div>
         <p className="text-xl text-muted-foreground max-w-4xl">
           Ranking de faturamento por produto considerando o valor real das vendas.
         </p>
       </header>
 
-      <Suspense fallback={<CardSkeleton />}>
-        <ProductData />
-      </Suspense>
+      {showEmptyState ? (
+        <FunnelsEmptyState message={emptyMessage} />
+      ) : (
+        <Suspense fallback={<CardSkeleton />}>
+          <ProductData funnels={selectedIds} />
+        </Suspense>
+      )}
     </main>
   );
 }

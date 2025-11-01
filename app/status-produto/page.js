@@ -3,12 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusByProductChart } from '@/components/graphs/status-by-product';
 import { loadSpotterMetrics } from '@/lib/spotter/load.ts';
 import { CardSkeleton } from '@/components/ui/card-skeleton';
+import { resolveFunnelSelection } from '@/lib/exactspotter/funnels';
+import FunnelPickerControl from '@/components/FunnelPickerControl';
+import { FunnelsEmptyState } from '@/components/funnels-empty-state';
 
 export const revalidate = 21600;
 export const dynamic = 'force-dynamic';
 
-async function ChartData() {
-  const { statusByProduct } = await loadSpotterMetrics();
+async function ChartData({ funnels }) {
+  const { statusByProduct } = await loadSpotterMetrics('currentYear', funnels);
   return (
     <Card>
       <CardHeader>
@@ -21,19 +24,34 @@ async function ChartData() {
   );
 }
 
-export default function StatusProdutoPage() {
+export default async function StatusProdutoPage({ searchParams }) {
+  const { selectedIds, explicit, available } = await resolveFunnelSelection(searchParams);
+  const hasActive = available.length > 0;
+  const hasSelection = selectedIds.length > 0;
+  const showEmptyState = !hasSelection && (explicit || !hasActive);
+  const emptyMessage = hasActive
+    ? 'Selecione ao menos um funil para visualizar os dados.'
+    : 'Nenhum funil ativo disponível no momento.';
+
   return (
     <main className="space-y-10 px-12 py-10">
       <header className="flex flex-col gap-4">
-        <h1 className="text-5xl font-bold tracking-tight">Status por Produto</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-5xl font-bold tracking-tight">Status por Produto</h1>
+          <FunnelPickerControl value={selectedIds} />
+        </div>
         <p className="text-xl text-muted-foreground max-w-4xl">
           Distribuição de negociações ganhas, perdidas e em andamento por produto nos últimos 12 meses.
         </p>
       </header>
 
-      <Suspense fallback={<CardSkeleton />}>
-        <ChartData />
-      </Suspense>
+      {showEmptyState ? (
+        <FunnelsEmptyState message={emptyMessage} />
+      ) : (
+        <Suspense fallback={<CardSkeleton />}>
+          <ChartData funnels={selectedIds} />
+        </Suspense>
+      )}
     </main>
   );
 }
