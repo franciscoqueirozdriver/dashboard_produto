@@ -33,7 +33,7 @@ export async function fetchSpotter<T>(path: string, qs = ''): Promise<OData<T>> 
     });
 
     if (!response.ok) {
-      const body = await response.text().catch(() => '');
+      const body = await response.clone().text().catch(() => '');
       console.error('[SPOTTER] FAIL', response.status, url, body.slice(0, 500));
       return { value: [] };
     }

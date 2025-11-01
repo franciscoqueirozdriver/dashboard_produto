@@ -41,6 +41,7 @@ describe('fetchSpotter', () => {
       ok: false,
       status: 500,
       text: vi.fn().mockResolvedValue('server error'),
+      clone: vi.fn().mockReturnThis(),
     });
 
     const result = await fetchSpotter('/Leads');
