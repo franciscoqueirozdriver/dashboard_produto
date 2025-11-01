@@ -115,11 +115,9 @@ export async function loadDashboardMetrics() {
     new Set(stages.map((s) => s.funnelId).filter(Boolean)),
   );
 
-  const [currentMonth, currentYear, last12Months] = await Promise.all([
-    loadSpotterMetrics('currentMonth', funnelIds),
-    loadSpotterMetrics('currentYear', funnelIds),
-    loadSpotterMetrics('last12Months', funnelIds),
-  ]);
+  const currentMonth = await loadSpotterMetrics('currentMonth', funnelIds);
+  const currentYear = await loadSpotterMetrics('currentYear', funnelIds);
+  const last12Months = await loadSpotterMetrics('last12Months', funnelIds);
 
   return { currentMonth, currentYear, last12Months };
 }
