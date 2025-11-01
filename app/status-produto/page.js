@@ -3,7 +3,7 @@ import { StatusByProductChart } from '@/components/graphs/status-by-product';
 import { loadSpotterMetrics } from '@/lib/spotter/load.ts';
 
 export const revalidate = 21600;
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 export default async function StatusProdutoPage() {
   const { statusByProduct } = await loadSpotterMetrics();

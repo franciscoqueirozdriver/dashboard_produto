@@ -3,7 +3,7 @@ import { DiscardReasonsChart } from '@/components/graphs/discard-reasons';
 import { loadSpotterMetrics } from '@/lib/spotter/load.ts';
 
 export const revalidate = 21600;
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 export default async function MotivosDescartePage() {
   const { discardChartData, discardReasonKeys } = await loadSpotterMetrics();
