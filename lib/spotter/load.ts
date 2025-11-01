@@ -100,11 +100,11 @@ export async function loadSpotterMetrics(
     );
   }
 
-  const funnelActivities = await Promise.all(
-    finalFunnelIds.map((funnelId) =>
-      safe(getFunnelActivity(period, funnelId), []),
-    ),
-  );
+  const funnelActivities = [];
+  for (const funnelId of finalFunnelIds) {
+    const activity = await safe(getFunnelActivity(period, funnelId), []);
+    funnelActivities.push(activity);
+  }
 
   return { ...metrics, funnelActivities };
 }
