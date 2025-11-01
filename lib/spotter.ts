@@ -4,14 +4,21 @@ export type OData<T> = {
 };
 
 function buildUrl(path: string, qs: string): string {
-  const base = process.env.SPOTTER_BASE_URL || 'https://api.exactspotter.com/v3';
+  const baseWithV3 = process.env.SPOTTER_BASE_URL || 'https://api.exactspotter.com/v3';
   if (/^https?:\/\//i.test(path)) {
     return path;
   }
   if (qs && /^https?:\/\//i.test(qs)) {
     return qs;
   }
-  return `${base}${path}${qs}`;
+
+  // If path already contains /v3, use a base URL without /v3 to avoid duplication.
+  if (path.startsWith('/v3/')) {
+    const baseWithoutV3 = baseWithV3.replace('/v3', '');
+    return `${baseWithoutV3}${path}${qs}`;
+  }
+
+  return `${baseWithV3}${path}${qs}`;
 }
 
 export async function fetchSpotter<T>(path: string, qs = ''): Promise<OData<T>> {
