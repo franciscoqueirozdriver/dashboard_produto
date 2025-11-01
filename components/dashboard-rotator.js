@@ -31,17 +31,23 @@ export function DashboardRotator({ allMetrics }) {
 
   const isRotatorEnabled = searchParams.get('rotator') !== 'false';
 
+  // Verifica se é período customizado
+  const isCustomPeriod = 'customPeriod' in allMetrics;
+
   useEffect(() => {
-    if (isPaused || !isRotatorEnabled) return;
+    if (isPaused || !isRotatorEnabled || isCustomPeriod) return;
 
     const timer = setInterval(() => {
       setCurrentViewIndex((prevIndex) => (prevIndex + 1) % VIEWS.length);
     }, DEFAULT_DURATION);
 
     return () => clearInterval(timer);
-  }, [isPaused, isRotatorEnabled]);
+  }, [isPaused, isRotatorEnabled, isCustomPeriod]);
 
-  const currentView = VIEWS[currentViewIndex];
+  // Se for período customizado, usa o customPeriod
+  const currentView = isCustomPeriod 
+    ? { key: 'customPeriod', title: 'Período Customizado', description: 'Dados do período selecionado' }
+    : VIEWS[currentViewIndex];
   const metrics = allMetrics[currentView.key];
 
   if (!metrics) {
