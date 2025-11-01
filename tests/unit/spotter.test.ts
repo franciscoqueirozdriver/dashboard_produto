@@ -13,7 +13,6 @@ describe('fetchSpotter', () => {
     vi.resetModules();
     process.env = { ...originalEnv };
     fetchMock = vi.fn();
-    // @ts-expect-error allow override for tests
     global.fetch = fetchMock;
     consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -21,7 +20,6 @@ describe('fetchSpotter', () => {
   afterEach(() => {
     process.env = { ...originalEnv };
     consoleSpy.mockRestore();
-    // @ts-expect-error cleanup
     delete global.fetch;
   });
 

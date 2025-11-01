@@ -90,7 +90,7 @@ export async function loadSpotterMetrics(period: Period = 'last12Months') {
   const metrics = assembleMetrics(dataset);
 
   const stages = await safe(getStages(), []);
-  const funnelIds = [...new Set(stages.map((s) => s.funnelId).filter(Boolean))];
+  const funnelIds = Array.from(new Set(stages.map((s) => s.funnelId).filter(Boolean)));
   const funnelActivities = await Promise.all(
     funnelIds.map((funnelId) => safe(getFunnelActivity(period, funnelId), [])),
   );
