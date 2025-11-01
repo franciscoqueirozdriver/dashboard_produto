@@ -6,40 +6,51 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export function PeriodSelector({ dateRange, setDateRange, className, onApply }) {
-  const [localRange, setLocalRange] = React.useState(dateRange);
+  const [open, setOpen] = React.useState(false);
 
-  const handleApply = () => {
-    // Simulação de seleção de período: Últimos 30 dias
-    const today = new Date();
-    const last30Days = new Date();
-    last30Days.setDate(today.getDate() - 30);
-    
-    const newRange = { from: last30Days, to: today };
-    setLocalRange(newRange);
-    onApply(newRange);
+  const handleSelect = (range) => {
+    setDateRange(range);
+    if (range?.from && range?.to) {
+      onApply(range);
+      setOpen(false);
+    }
   };
 
-  const displayRange = localRange?.from
-    ? localRange.to
-      ? format(localRange.from, 'dd/MM/yyyy') + ' - ' + format(localRange.to, 'dd/MM/yyyy')
-      : format(localRange.from, 'dd/MM/yyyy')
+  const displayRange = dateRange?.from
+    ? dateRange.to
+      ? format(dateRange.from, 'dd/MM/yyyy') + ' - ' + format(dateRange.to, 'dd/MM/yyyy')
+      : format(dateRange.from, 'dd/MM/yyyy')
     : 'Selecione um período';
 
   return (
-    <div className={cn('flex items-center space-x-2', className)}>
-      <Button
-        variant={'outline'}
-        className={cn(
-          'justify-start text-left font-normal gap-2',
-          !localRange?.from && 'text-muted-foreground'
-        )}
-        onClick={handleApply}
-      >
-        <CalendarIcon className="h-4 w-4" />
-        <span>{displayRange}</span>
-      </Button>
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant={'outline'}
+          className={cn(
+            'justify-start text-left font-normal gap-2',
+            !dateRange?.from && 'text-muted-foreground',
+            className
+          )}
+        >
+          <CalendarIcon className="h-4 w-4" />
+          <span>{displayRange}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0">
+        <Calendar
+          initialFocus
+          mode="range"
+          defaultMonth={dateRange?.from}
+          selected={dateRange}
+          onSelect={handleSelect}
+          numberOfMonths={2}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
