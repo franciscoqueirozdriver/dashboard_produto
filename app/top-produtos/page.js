@@ -1,6 +1,8 @@
+import { Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TopProductsChart } from '@/components/graphs/top-products';
 import { loadSpotterMetrics } from '@/lib/spotter/load';
+import { CardSkeleton } from '@/components/ui/card-skeleton';
 
 const currency = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -10,18 +12,10 @@ const currency = new Intl.NumberFormat('pt-BR', {
 export const revalidate = 21600;
 export const dynamic = 'force-dynamic';
 
-export default async function TopProdutosPage() {
+async function ProductData() {
   const { topProducts } = await loadSpotterMetrics();
-
   return (
-    <main className="space-y-10 px-12 py-10">
-      <header className="flex flex-col gap-4">
-        <h1 className="text-5xl font-bold tracking-tight">Top Produtos Vendidos</h1>
-        <p className="text-xl text-muted-foreground max-w-4xl">
-          Ranking de faturamento por produto considerando o valor real das vendas.
-        </p>
-      </header>
-
+    <>
       <Card>
         <CardHeader className="flex flex-col gap-2">
           <CardTitle className="text-2xl font-semibold text-muted-foreground">Receita por produto</CardTitle>
@@ -43,6 +37,23 @@ export default async function TopProdutosPage() {
           </div>
         ))}
       </section>
+    </>
+  );
+}
+
+export default function TopProdutosPage() {
+  return (
+    <main className="space-y-10 px-12 py-10">
+      <header className="flex flex-col gap-4">
+        <h1 className="text-5xl font-bold tracking-tight">Top Produtos Vendidos</h1>
+        <p className="text-xl text-muted-foreground max-w-4xl">
+          Ranking de faturamento por produto considerando o valor real das vendas.
+        </p>
+      </header>
+
+      <Suspense fallback={<CardSkeleton />}>
+        <ProductData />
+      </Suspense>
     </main>
   );
 }
