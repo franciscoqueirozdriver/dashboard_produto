@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { fetchActiveFunnels } from '@/lib/exactspotter/funnels';
+import { Button } from '@/components/ui/button';
 
 type FunnelItem = { id: number; name: string };
 
@@ -127,34 +128,36 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
 
   return (
     <div className="relative inline-flex">
-      <button
+      <Button
         ref={triggerRef}
         type="button"
-        className="rounded-lg border border-emerald-600 bg-[#0e1623] px-4 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-600/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+        variant="outline"
+        size="sm"
+        className="gap-2 bg-card/80 text-foreground"
         onClick={() => setOpen((state) => !state)}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
         {label}
-      </button>
+      </Button>
       {open && (
         <div
           ref={panelRef}
           role="dialog"
           aria-modal="true"
           tabIndex={-1}
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[420px] rounded-2xl border border-slate-800 bg-[#0f1624] p-4 text-slate-200 shadow-xl outline-none"
+          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[420px] rounded-2xl border border-slate-800 bg-card p-4 text-foreground shadow-xl outline-none"
         >
           <div className="flex flex-col gap-3">
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar funil..."
-              className="w-full rounded-lg border border-slate-700 bg-[#0e1623] px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/60"
+              className="w-full rounded-lg border border-slate-700 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
             />
             <div className="max-h-72 overflow-y-auto pr-1">
               {filtered.length === 0 ? (
-                <div className="rounded-lg bg-slate-900/60 px-3 py-6 text-center text-sm text-slate-400">
+                <div className="rounded-lg bg-muted/60 px-3 py-6 text-center text-sm text-muted-foreground">
                   Nenhum funil encontrado
                 </div>
               ) : (
@@ -163,14 +166,14 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
                     const checked = selected.includes(item.id);
                     return (
                       <li key={item.id}>
-                        <label className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-slate-800/60">
+                        <label className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-muted/60">
                           <input
                             type="checkbox"
-                            className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            className="h-4 w-4 rounded border-slate-600 bg-background text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
                             checked={checked}
                             onChange={() => toggle(item.id)}
                           />
-                          <span className="text-slate-100">{item.name}</span>
+                          <span className="text-foreground">{item.name}</span>
                         </label>
                       </li>
                     );
@@ -180,28 +183,28 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
             </div>
             <div className="flex items-center justify-between">
               <div className="flex gap-2">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
+                  className="bg-card/80 text-foreground"
                   onClick={selectAll}
-                  className="rounded-full border border-emerald-900/40 bg-[#0b1f1a] px-3 py-2 text-xs font-semibold text-emerald-200 transition-colors hover:bg-[#0f2b22] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                   Selecionar todos
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
+                  className="bg-card/80 text-foreground"
                   onClick={clearAll}
-                  className="rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-800/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                   Limpar
-                </button>
+                </Button>
               </div>
-              <button
-                type="button"
-                onClick={applySelection}
-                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-[#04130e] transition-colors hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-              >
+              <Button type="button" variant="default" size="sm" onClick={applySelection}>
                 Aplicar
-              </button>
+              </Button>
             </div>
           </div>
         </div>
