@@ -24,12 +24,13 @@ const VIEWS = [
 
 const DEFAULT_DURATION = 30000; // 30 segundos em milissegundos
 
-export function DashboardRotator({ allMetrics }) {
+export function DashboardRotator({ allMetrics, showFloatingFab = false }) {
   const [currentViewIndex, setCurrentViewIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const searchParams = useSearchParams();
 
   const isRotatorEnabled = searchParams.get('rotator') !== 'false';
+  const debugControlsEnabled = process.env.NEXT_PUBLIC_DEBUG_CONTROLS === '1';
 
   // Verifica se é período customizado
   const isCustomPeriod = 'customPeriod' in allMetrics;
@@ -71,8 +72,8 @@ export function DashboardRotator({ allMetrics }) {
         periodTitle={currentView.title}
         periodDescription={currentView.description}
       />
-      {/* Botão flutuante para pausar/retomar a rotação (opcional, mas útil) */}
-      {isRotatorEnabled && (
+      {/* Botão flutuante para pausar/retomar a rotação (visível apenas em modo debug ou quando solicitado) */}
+      {isRotatorEnabled && (showFloatingFab || debugControlsEnabled) && (
         <button
           onClick={() => setIsPaused(!isPaused)}
           className="fixed bottom-4 right-4 p-3 bg-primary text-primary-foreground rounded-full shadow-lg z-50"
