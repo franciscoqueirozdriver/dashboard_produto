@@ -77,7 +77,10 @@ function assembleMetrics(dataset) {
   };
 }
 
-export async function loadSpotterMetrics(period: Period = 'last12Months') {
+export async function loadSpotterMetrics(
+  period: Period = 'last12Months',
+  funnelIds?: string[],
+) {
   const rawData = await safe(getSpotterDataset(period), {
     leads: [],
     leadsSold: [],
@@ -89,20 +92,33 @@ export async function loadSpotterMetrics(period: Period = 'last12Months') {
   const dataset = buildDataset(rawData);
   const metrics = assembleMetrics(dataset);
 
-  const stages = await safe(getStages(), []);
-  const funnelIds = Array.from(new Set(stages.map((s) => s.funnelId).filter(Boolean)));
+  let finalFunnelIds = funnelIds;
+  if (!finalFunnelIds) {
+    const stages = await safe(getStages(), []);
+    finalFunnelIds = Array.from(
+      new Set(stages.map((s) => s.funnelId).filter(Boolean)),
+    );
+  }
+
   const funnelActivities = await Promise.all(
-    funnelIds.map((funnelId) => safe(getFunnelActivity(period, funnelId), [])),
+    finalFunnelIds.map((funnelId) =>
+      safe(getFunnelActivity(period, funnelId), []),
+    ),
   );
 
   return { ...metrics, funnelActivities };
 }
 
 export async function loadDashboardMetrics() {
+  const stages = await safe(getStages(), []);
+  const funnelIds = Array.from(
+    new Set(stages.map((s) => s.funnelId).filter(Boolean)),
+  );
+
   const [currentMonth, currentYear, last12Months] = await Promise.all([
-    loadSpotterMetrics('currentMonth'),
-    loadSpotterMetrics('currentYear'),
-    loadSpotterMetrics('last12Months'),
+    loadSpotterMetrics('currentMonth', funnelIds),
+    loadSpotterMetrics('currentYear', funnelIds),
+    loadSpotterMetrics('last12Months', funnelIds),
   ]);
 
   return { currentMonth, currentYear, last12Months };
