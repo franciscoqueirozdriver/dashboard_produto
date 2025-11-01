@@ -23,7 +23,7 @@ export function PeriodSelector({ dateRange, setDateRange, className, onApply }) 
 
   const displayRange = localRange?.from
     ? localRange.to
-      ? \`\${format(localRange.from, 'dd/MM/yyyy')} - \${format(localRange.to, 'dd/MM/yyyy')}\`
+      ? format(localRange.from, 'dd/MM/yyyy') + ' - ' + format(localRange.to, 'dd/MM/yyyy')
       : format(localRange.from, 'dd/MM/yyyy')
     : 'Selecione um período';
 
