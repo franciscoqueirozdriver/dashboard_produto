@@ -46,10 +46,13 @@ export function DashboardRotator({ allMetrics }) {
 
   if (!metrics) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <h2 className="text-2xl font-bold mb-4">Dados Não Disponíveis</h2>
-        <p className="text-lg text-gray-400">
-          Não há dados disponíveis para o período: {currentView.title}.
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
+        <h2 className="text-2xl font-bold mb-4 text-red-500">⚠️ Erro ao Carregar Dados</h2>
+        <p className="text-lg text-muted-foreground">
+          Não foi possível carregar os dados para o período: {currentView.title}.
+        </p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Verifique sua conexão com a API Spotter.
         </p>
       </div>
     );
