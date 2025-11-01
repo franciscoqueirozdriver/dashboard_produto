@@ -1,0 +1,53 @@
+/* styles/rdr-dark.css */
+.rdrCalendarWrapper {
+  background: #0f1624;
+  border-radius: 12px;
+  color: #e2e8f0;
+}
+
+.rdrMonth {
+  background: transparent;
+}
+
+.rdrWeekDay {
+  color: #94a3b8 !important;
+}
+
+.rdrDayNumber span {
+  color: #e2e8f0 !important;
+}
+
+.rdrDayDisabled {
+  opacity: 0.35;
+}
+
+.rdrDayToday .rdrDayNumber span::after {
+  background: #10b981 !important;
+}
+
+.rdrDayStartPreview,
+.rdrDayEndPreview,
+.rdrInRange,
+.rdrStartEdge,
+.rdrEndEdge {
+  background: #10b981 !important;
+}
+
+.rdrInRange {
+  background: rgba(16, 185, 129, 0.25) !important;
+}
+
+.rdrSelected,
+.rdrStartEdge,
+.rdrEndEdge {
+  color: #04130e !important;
+}
+
+.rdrDateRangeWrapper {
+  border: 1px solid #243347;
+  border-radius: 12px;
+}
+
+.rdrDefinedRangesWrapper {
+  display: none;
+}
