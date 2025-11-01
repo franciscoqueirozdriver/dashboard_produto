@@ -121,7 +121,7 @@ export default function AutoRotate({ children }) {
   return (
     <div className="relative min-h-screen">
       {children}
-      <div className="pointer-events-none fixed bottom-6 right-6 z-50 flex gap-2">
+      <div className="pointer-events-none fixed top-6 right-6 z-50 flex gap-2">
         <PeriodSelector
           dateRange={dateRange}
           setDateRange={setDateRange}

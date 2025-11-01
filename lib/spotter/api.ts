@@ -32,23 +32,23 @@ function getPeriod(period: Period = 'last12Months', from?: string, to?: string) 
 
 function getFilterDate(period: Period = 'last12Months', from?: string, to?: string) {
   if (period === 'custom' && from && to) {
-    return \`date ge \${from} and date le \${to}\`;
+    return 'date ge ' + from + ' and date le ' + to;
   }
-  return \`date ge \${getPeriod(period)}\`;
+  return 'date ge ' + getPeriod(period);
 }
 
 function getLeadFilterDate(period: Period = 'last12Months', from?: string, to?: string) {
   if (period === 'custom' && from && to) {
-    return \`registerDate ge \${from} and registerDate le \${to}\`;
+    return 'registerDate ge ' + from + ' and registerDate le ' + to;
   }
-  return \`registerDate ge \${getPeriod(period)}\`;
+  return 'registerDate ge ' + getPeriod(period);
 }
 
 function getSaleFilterDate(period: Period = 'last12Months', from?: string, to?: string) {
   if (period === 'custom' && from && to) {
-    return \`saleDate ge \${from} and saleDate le \${to}\`;
+    return 'saleDate ge ' + from + ' and saleDate le ' + to;
   }
-  return \`saleDate ge \${getPeriod(period)}\`;
+  return 'saleDate ge ' + getPeriod(period);
 }
 
 function buildQuery(params?: Record<string, unknown>) {
@@ -132,7 +132,7 @@ export async function getSpotterDataset(period: Period = 'last12Months', from?: 
 
   // Etapa 1: Buscar todos os leads do funil especificado.
   const leads = await safe(fetchPaginated<any>('/Leads', {
-    $filter: \`\${getLeadFilterDate(period, from, to)} and ${funnelFilter}\`,
+    $filter: getLeadFilterDate(period, from, to) + ' and ' + funnelFilter,
   }), []);
 
   // Etapa 2: Extrair IDs dos leads. Se não houver leads, não há necessidade de buscar vendas ou perdas.
@@ -155,11 +155,11 @@ export async function getSpotterDataset(period: Period = 'last12Months', from?: 
   ] = await Promise.all([
     safe(fetchPaginated<any>('/LeadsSold', {
       $select: 'leadId,saleDate,totalDealValue,saleStage,products',
-      $filter: \`\${getSaleFilterDate(period, from, to)} and ${leadIdFilter}\`,
+      $filter: getSaleFilterDate(period, from, to) + ' and ' + leadIdFilter,
     }), []),
     safe(fetchPaginated<any>('/LeadsDiscarded', {
       $select: 'leadId,date,reason',
-      $filter: \`\${getFilterDate(period, from, to)} and ${leadIdFilter}\`,
+      $filter: getFilterDate(period, from, to) + ' and ' + leadIdFilter,
     }), []),
     safe(fetchPaginated<any>('/RecommendedProducts', {
       $filter: leadIdFilter,
