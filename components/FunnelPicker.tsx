@@ -128,18 +128,16 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
 
   return (
     <div className="relative inline-flex">
-      <Button
+      <button
         ref={triggerRef}
         type="button"
-        variant="outline"
-        size="sm"
-        className="gap-2 bg-card/80 text-foreground"
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800/40 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
         onClick={() => setOpen((state) => !state)}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
         {label}
-      </Button>
+      </button>
       {open && (
         <div
           ref={panelRef}
