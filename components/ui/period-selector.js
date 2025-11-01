@@ -1,274 +1,295 @@
 'use client';
 
 import * as React from 'react';
+import * as Popover from '@radix-ui/react-popover';
+import { DateRangePicker } from 'react-date-range';
 import {
+  addDays,
   endOfMonth,
   endOfWeek,
   format,
+  startOfDay,
   startOfMonth,
   startOfWeek,
   startOfYear,
-  subDays,
   subMonths,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import { DayPicker } from 'react-day-picker';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
-const normalizeDate = (value) => {
-  if (!value) return undefined;
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  return date;
+const SELECTION_KEY = 'selection';
+const localeWithMonday = {
+  ...ptBR,
+  options: { ...ptBR.options, weekStartsOn: 1 },
 };
 
-const normalizeRange = (range) => {
-  if (!range) return undefined;
-  const from = normalizeDate(range.from);
-  const to = normalizeDate(range.to);
-
-  if (from && to && from > to) {
-    return { from: to, to: from };
-  }
-
-  if (!from && !to) {
-    return undefined;
-  }
-
-  return { from: from ?? undefined, to: to ?? undefined };
-};
-
-const isSameDay = (a, b) => {
-  if (!a || !b) return false;
-  return a.getTime() === b.getTime();
-};
-
-const createPresetRange = (factory) => () => normalizeRange(factory());
-
-const PRESETS = [
+const presetFactories = [
   {
-    key: 'today',
     label: 'Hoje',
-    getRange: createPresetRange(() => {
-      const today = normalizeDate(new Date());
-      return { from: today, to: today };
-    }),
+    create: () => {
+      const today = new Date();
+      const start = startOfDay(today);
+      const end = startOfDay(today);
+      return { startDate: start, endDate: end, key: SELECTION_KEY };
+    },
   },
   {
-    key: 'last7',
     label: 'Últimos 7 dias',
-    getRange: createPresetRange(() => {
-      const today = normalizeDate(new Date());
-      return { from: subDays(today, 6), to: today };
-    }),
+    create: () => {
+      const end = startOfDay(new Date());
+      const start = startOfDay(addDays(end, -6));
+      return { startDate: start, endDate: end, key: SELECTION_KEY };
+    },
   },
   {
-    key: 'currentWeek',
     label: 'Semana Atual',
-    getRange: createPresetRange(() => {
-      const today = new Date();
-      const from = normalizeDate(startOfWeek(today, { weekStartsOn: 1 }));
-      const to = normalizeDate(endOfWeek(today, { weekStartsOn: 1 }));
-      return { from, to };
-    }),
+    create: () => {
+      const end = endOfWeek(new Date(), { weekStartsOn: 1 });
+      const start = startOfWeek(new Date(), { weekStartsOn: 1 });
+      return { startDate: startOfDay(start), endDate: startOfDay(end), key: SELECTION_KEY };
+    },
   },
   {
-    key: 'last30',
     label: 'Últimos 30 dias',
-    getRange: createPresetRange(() => {
-      const today = normalizeDate(new Date());
-      return { from: subDays(today, 29), to: today };
-    }),
+    create: () => {
+      const end = startOfDay(new Date());
+      const start = startOfDay(addDays(end, -29));
+      return { startDate: start, endDate: end, key: SELECTION_KEY };
+    },
   },
   {
-    key: 'lastMonth',
     label: 'Mês Passado',
-    getRange: createPresetRange(() => {
-      const today = new Date();
-      const lastMonth = subMonths(today, 1);
-      const from = normalizeDate(startOfMonth(lastMonth));
-      const to = normalizeDate(endOfMonth(lastMonth));
-      return { from, to };
-    }),
+    create: () => {
+      const reference = subMonths(new Date(), 1);
+      const start = startOfMonth(reference);
+      const end = endOfMonth(reference);
+      return { startDate: startOfDay(start), endDate: startOfDay(end), key: SELECTION_KEY };
+    },
   },
   {
-    key: 'currentMonth',
     label: 'Mês Atual',
-    getRange: createPresetRange(() => {
-      const today = normalizeDate(new Date());
-      const from = normalizeDate(startOfMonth(today));
-      return { from, to: today };
-    }),
+    create: () => {
+      const now = new Date();
+      const start = startOfMonth(now);
+      return { startDate: startOfDay(start), endDate: startOfDay(now), key: SELECTION_KEY };
+    },
   },
   {
-    key: 'currentYear',
     label: 'Ano Atual',
-    getRange: createPresetRange(() => {
-      const today = normalizeDate(new Date());
-      const from = normalizeDate(startOfYear(today));
-      return { from, to: today };
-    }),
+    create: () => {
+      const now = new Date();
+      const start = startOfYear(now);
+      return { startDate: startOfDay(start), endDate: startOfDay(now), key: SELECTION_KEY };
+    },
   },
 ];
 
-const findMatchingPreset = (range) => {
-  if (!range?.from || !range?.to) return undefined;
+function toSelection(range) {
+  if (!range || (!range.from && !range.to)) {
+    return null;
+  }
 
-  return PRESETS.find((preset) => {
-    const presetRange = preset.getRange();
-    return (
-      presetRange?.from &&
-      presetRange?.to &&
-      isSameDay(presetRange.from, normalizeDate(range.from)) &&
-      isSameDay(presetRange.to, normalizeDate(range.to))
-    );
-  });
-};
+  const start = range.from ? startOfDay(range.from) : undefined;
+  const end = range.to ? startOfDay(range.to) : start;
+
+  if (!start) {
+    return null;
+  }
+
+  return {
+    startDate: start,
+    endDate: end ?? start,
+    key: SELECTION_KEY,
+  };
+}
+
+function toExternalRange(selection) {
+  if (!selection || !selection.startDate || !selection.endDate) {
+    return null;
+  }
+  return {
+    from: startOfDay(selection.startDate),
+    to: startOfDay(selection.endDate),
+  };
+}
+
+function isSameDayRange(a, b) {
+  if (!a || !b) return false;
+  return (
+    a.startDate?.toDateString() === b.startDate?.toDateString() &&
+    a.endDate?.toDateString() === b.endDate?.toDateString()
+  );
+}
 
 export function PeriodSelector({ dateRange, setDateRange, className, onApply }) {
-  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+  const pendingStartRef = React.useRef(null);
 
-  const normalizedSelection = React.useMemo(
-    () => normalizeRange(dateRange),
-    [dateRange]
-  );
+  const normalizedSelection = React.useMemo(() => {
+    return (
+      toSelection(dateRange) ?? {
+        startDate: startOfYear(new Date()),
+        endDate: startOfDay(new Date()),
+        key: SELECTION_KEY,
+      }
+    );
+  }, [dateRange]);
 
-  const activePreset = React.useMemo(
-    () => findMatchingPreset(normalizedSelection),
-    [normalizedSelection]
-  );
+  const [selection, setSelection] = React.useState(normalizedSelection);
 
-  const displayRange = React.useMemo(() => {
-    if (activePreset) {
-      return activePreset.label;
+  React.useEffect(() => {
+    setSelection(normalizedSelection);
+    pendingStartRef.current = null;
+  }, [normalizedSelection]);
+
+  React.useEffect(() => {
+    if (!open) {
+      pendingStartRef.current = null;
+    }
+  }, [open]);
+
+  const matchedPresetLabel = React.useMemo(() => {
+    return (
+      presetFactories.find((preset) => isSameDayRange(selection, preset.create()))?.label ??
+      null
+    );
+  }, [selection]);
+
+  const buttonLabel = React.useMemo(() => {
+    if (matchedPresetLabel) {
+      return matchedPresetLabel;
     }
 
-    if (normalizedSelection?.from && normalizedSelection?.to) {
-      return (
-        format(normalizedSelection.from, 'dd/MM/yyyy') +
-        ' – ' +
-        format(normalizedSelection.to, 'dd/MM/yyyy')
-      );
+    const external = toExternalRange(selection);
+    if (external?.from && external?.to) {
+      return `${format(external.from, 'dd/MM/yyyy')} – ${format(external.to, 'dd/MM/yyyy')}`;
     }
-
-    if (normalizedSelection?.from) {
-      return format(normalizedSelection.from, 'dd/MM/yyyy');
-    }
-
     return 'Selecione um período';
-  }, [activePreset, normalizedSelection]);
+  }, [matchedPresetLabel, selection]);
 
-  const handlePresetSelect = (preset) => {
-    const range = preset.getRange();
-    setDateRange(range);
-    onApply(range);
-    setIsDropdownOpen(false);
-  };
+  const applyRange = React.useCallback(
+    (nextSelection) => {
+      setSelection(nextSelection);
+      const external = toExternalRange(nextSelection);
+      if (external) {
+        setDateRange(external);
+        onApply?.(external);
+      }
+      pendingStartRef.current = null;
+    },
+    [onApply, setDateRange]
+  );
 
-  const handleRangeSelect = (range) => {
-    const normalized = normalizeRange(range);
-    setDateRange(normalized);
+  const handlePresetClick = React.useCallback(
+    (factory) => {
+      const next = factory.create();
+      applyRange(next);
+      setOpen(false);
+    },
+    [applyRange]
+  );
 
-    if (normalized?.from && normalized?.to) {
-      onApply(normalized);
-      setIsDropdownOpen(false);
-    }
-  };
+  const handleApplyClick = React.useCallback(() => {
+    applyRange(selection);
+    setOpen(false);
+  }, [applyRange, selection]);
 
-  const handleApply = () => {
-    const normalized = normalizeRange(dateRange);
-    if (normalized?.from && normalized?.to) {
-      setDateRange(normalized);
-      onApply(normalized);
-      setIsDropdownOpen(false);
-    }
-  };
+  const handleRangeChange = React.useCallback(
+    (ranges) => {
+      const rawSelection = ranges?.selection ?? ranges;
+      if (!rawSelection) return;
 
-  const defaultMonth = normalizedSelection?.from ?? new Date();
-  const canApply = Boolean(normalizedSelection?.from && normalizedSelection?.to);
+      const nextSelection = {
+        startDate: rawSelection.startDate ?? selection.startDate,
+        endDate: rawSelection.endDate ?? rawSelection.startDate ?? selection.endDate,
+        key: SELECTION_KEY,
+      };
+
+      setSelection(nextSelection);
+
+      const external = toExternalRange(nextSelection);
+      if (external) {
+        setDateRange(external);
+      }
+
+      if (!pendingStartRef.current && rawSelection.startDate) {
+        pendingStartRef.current = rawSelection.startDate;
+        return;
+      }
+
+      if (pendingStartRef.current && rawSelection.endDate) {
+        pendingStartRef.current = null;
+        if (external) {
+          onApply?.(external);
+        }
+        setOpen(false);
+      }
+    },
+    [onApply, selection, setDateRange]
+  );
 
   return (
-    <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-      <DropdownMenuTrigger asChild>
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
         <Button
           variant="outline"
           size="sm"
           className={cn(
-            'h-10 min-w-[14rem] justify-start gap-2 rounded-xl border-[#243347] bg-[#0e1623] text-left text-sm font-normal text-[#e2e8f0]',
-            !normalizedSelection?.from && 'text-muted-foreground',
+            'gap-2 bg-[#0e1623] text-sm font-medium text-emerald-200 hover:bg-emerald-500/10',
             className
           )}
+          aria-label="Abrir seletor de período"
         >
-          <CalendarIcon className="h-4 w-4 text-emerald-300" aria-hidden="true" />
-          <span>{displayRange}</span>
+          <CalendarIcon className="h-4 w-4" />
+          <span>{buttonLabel}</span>
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        sideOffset={12}
-        className="w-[560px] max-w-[90vw] rounded-2xl border border-[#243347] bg-[#0f1624] p-4 text-[#e2e8f0] shadow-xl"
-      >
-        <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-4">
-          {PRESETS.map((preset) => (
-            <PresetChip
-              key={preset.key}
-              type="button"
-              onClick={() => handlePresetSelect(preset)}
-              data-active={preset.key === activePreset?.key}
-              aria-pressed={preset.key === activePreset?.key}
-            >
-              {preset.label}
-            </PresetChip>
-          ))}
-        </div>
-
-        <div className="rounded-2xl border border-[#243347] bg-[#0e1623] p-3">
-          <DayPicker
-            mode="range"
-            captionLayout="dropdown"
-            selected={normalizedSelection}
-            onSelect={handleRangeSelect}
-            numberOfMonths={2}
-            weekStartsOn={1}
-            locale={ptBR}
-            showOutsideDays
-            fixedWeeks
-            defaultMonth={defaultMonth}
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="bottom"
+          align="start"
+          sideOffset={8}
+          className="w-[720px] max-w-[95vw] rounded-xl border border-[#243347] bg-[#0f1624] p-4 text-slate-200 shadow-xl focus:outline-none"
+        >
+          <div className="flex flex-wrap gap-2 pb-3">
+            {presetFactories.map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => handlePresetClick(preset)}
+                className="rounded-full border border-emerald-900/40 bg-[#0b1f1a] px-3 py-2 text-xs font-medium text-emerald-200 transition-colors hover:bg-[#0f2b22] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f1624]"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+          <DateRangePicker
+            onChange={handleRangeChange}
+            moveRangeOnFirstSelection={false}
+            months={2}
+            direction="horizontal"
+            showDateDisplay={false}
+            ranges={[selection]}
+            rangeColors={['#10b981']}
+            monthDisplayFormat="LLLL yyyy"
+            weekdayDisplayFormat="EEEEE"
+            locale={localeWithMonday}
+            showPreview={false}
           />
-        </div>
-
-        <div className="mt-4 flex justify-end">
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleApply}
-            disabled={!canApply}
-            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-[#04130e] hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Aplicar
-          </Button>
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-function PresetChip({ className, ...props }) {
-  return (
-    <button
-      {...props}
-      className={cn(
-        'rounded-full border border-emerald-900/40 bg-[#0b1f1a] px-3 py-1.5 text-xs font-medium text-emerald-200 transition-colors hover:bg-[#0f2b22] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-0 data-[active=true]:border-emerald-400 data-[active=true]:bg-emerald-500 data-[active=true]:text-[#04130e]',
-        className
-      )}
-    />
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={handleApplyClick}
+              className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-[#04130e] transition-colors hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f1624]"
+            >
+              Aplicar
+            </button>
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }

@@ -1,5 +1,8 @@
 import './globals.css';
 import './styles/daypicker-dark.css';
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
+import './styles/rdr-dark.css';
 import { Suspense } from 'react';
 import { Inter } from 'next/font/google';
 import { cn } from '@/lib/utils';
