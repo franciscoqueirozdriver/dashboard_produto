@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { PauseCircle, PlayCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calendar, PauseCircle, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const DEFAULT_ORDER = [
@@ -61,6 +61,26 @@ export default function AutoRotate({ children }) {
     return () => clearTimeout(timerRef.current);
   }, [pathname, durations, isPaused, scheduleNext]);
 
+    const goNext = useCallback(() => {
+    const currentIndex = DEFAULT_ORDER.findIndex((item) => item.path === pathname);
+    if (currentIndex === -1) return;
+    const nextIndex = (currentIndex + 1) % DEFAULT_ORDER.length;
+    const next = DEFAULT_ORDER[nextIndex];
+    if (!next) return;
+    const queryString = searchParams.toString();
+    router.replace(queryString ? `${next.path}?${queryString}` : next.path);
+  }, [pathname, router, searchParams]);
+
+  const goPrevious = useCallback(() => {
+    const currentIndex = DEFAULT_ORDER.findIndex((item) => item.path === pathname);
+    if (currentIndex === -1) return;
+    const prevIndex = (currentIndex - 1 + DEFAULT_ORDER.length) % DEFAULT_ORDER.length;
+    const prev = DEFAULT_ORDER[prevIndex];
+    if (!prev) return;
+    const queryString = searchParams.toString();
+    router.replace(queryString ? `${prev.path}?${queryString}` : prev.path);
+  }, [pathname, router, searchParams]);
+
   const togglePause = () => {
     if (isPaused) {
       setIsPaused(false);
@@ -73,7 +93,34 @@ export default function AutoRotate({ children }) {
   return (
     <div className="relative min-h-screen">
       {children}
-      <div className="pointer-events-none fixed bottom-6 right-6 z-50">
+            <div className="pointer-events-none fixed bottom-6 right-6 z-50 flex gap-2">
+                <Button
+          onClick={goPrevious}
+          size="sm"
+          variant="outline"
+          className="pointer-events-auto gap-2 bg-card/80 text-foreground"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          Voltar
+        </Button>
+        <Button
+          onClick={goNext}
+          size="sm"
+          variant="outline"
+          className="pointer-events-auto gap-2 bg-card/80 text-foreground"
+        >
+          <ArrowRight className="h-5 w-5" />
+          Avançar
+        </Button>
+        <Button
+          onClick={() => alert('Funcionalidade de período a ser implementada')}
+          size="sm"
+          variant="outline"
+          className="pointer-events-auto gap-2 bg-card/80 text-foreground"
+        >
+          <Calendar className="h-5 w-5" />
+          Período
+        </Button>
         <Button
           onClick={togglePause}
           size="sm"

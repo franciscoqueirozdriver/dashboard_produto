@@ -1,5 +1,5 @@
 import { safe } from '@/lib/safe';
-import { getSpotterDataset } from '@/lib/spotter/api';
+import { getSpotterDataset, Period } from '@/lib/spotter/api';
 import {
   buildDataset,
   getAverageTicketByProduct,
@@ -39,7 +39,7 @@ function assembleMetrics(dataset) {
         set.add(entry.reason);
       }
       return set;
-    }, new Set())
+    }, new Set<string>())
   );
 
   if (!discardReasonKeys.length) {
@@ -48,7 +48,7 @@ function assembleMetrics(dataset) {
 
   const discardChartData = discardReasons.length
     ? discardReasons.map((item) => {
-        const row = { product: item.product };
+        const row: { [key: string]: any } = { product: item.product };
         for (const key of discardReasonKeys) {
           row[key] = 0;
         }
@@ -77,14 +77,25 @@ function assembleMetrics(dataset) {
   };
 }
 
-export async function loadSpotterMetrics() {
-  const rawData = await safe(getSpotterDataset(), {
+export async function loadSpotterMetrics(period: Period = 'last12Months') {
+  const rawData = await safe(getSpotterDataset(period), {
     leads: [],
     leadsSold: [],
     losts: [],
-    productsDictionary: [],
+    recommendedProducts: [],
+    products: [],
   });
 
   const dataset = buildDataset(rawData);
   return assembleMetrics(dataset);
+}
+
+export async function loadDashboardMetrics() {
+  const [currentMonth, currentYear, last12Months] = await Promise.all([
+    loadSpotterMetrics('currentMonth'),
+    loadSpotterMetrics('currentYear'),
+    loadSpotterMetrics('last12Months'),
+  ]);
+
+  return { currentMonth, currentYear, last12Months };
 }
