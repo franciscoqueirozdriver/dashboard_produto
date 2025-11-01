@@ -78,29 +78,39 @@ function assembleMetrics(dataset) {
 }
 
 export async function loadSpotterMetrics(period: Period = 'last12Months') {
-  const rawData = await safe(getSpotterDataset(period), {
-    leads: [],
-    leadsSold: [],
-    losts: [],
-    recommendedProducts: [],
-    products: [],
-  });
+  try {
+    const rawData = await safe(getSpotterDataset(period), {
+      leads: [],
+      leadsSold: [],
+      losts: [],
+      recommendedProducts: [],
+      products: [],
+    });
 
-  const dataset = buildDataset(rawData);
-  return assembleMetrics(dataset);
+    const dataset = buildDataset(rawData);
+    return assembleMetrics(dataset);
+  } catch (error) {
+    console.error(`[METRICS] Failed to load metrics for period: ${period}`, error);
+    return null;
+  }
 }
 
 export async function loadSpotterMetricsCustom(from: string, to: string) {
-  const rawData = await safe(getSpotterDataset('custom', from, to), {
-    leads: [],
-    leadsSold: [],
-    losts: [],
-    recommendedProducts: [],
-    products: [],
-  });
+  try {
+    const rawData = await safe(getSpotterDataset('custom', from, to), {
+      leads: [],
+      leadsSold: [],
+      losts: [],
+      recommendedProducts: [],
+      products: [],
+    });
 
-  const dataset = buildDataset(rawData);
-  return assembleMetrics(dataset);
+    const dataset = buildDataset(rawData);
+    return assembleMetrics(dataset);
+  } catch (error) {
+    console.error(`[METRICS] Failed to load custom metrics from ${from} to ${to}`, error);
+    return null;
+  }
 }
 
 export async function loadDashboardMetrics(searchParams: { [key: string]: string | string[] | undefined }) {
