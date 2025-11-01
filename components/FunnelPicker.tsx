@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { fetchActiveFunnels } from '@/lib/exactspotter/funnels';
-import { Button } from '@/components/ui/button';
 
 type FunnelItem = { id: number; name: string };
 
@@ -181,28 +180,28 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
             </div>
             <div className="flex items-center justify-between">
               <div className="flex gap-2">
-                <Button
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  className="bg-card/80 text-foreground"
+                  className="text-xs px-3 py-2 rounded-full border border-slate-700 bg-slate-900 hover:bg-slate-800/60 text-slate-200"
                   onClick={selectAll}
                 >
                   Selecionar todos
-                </Button>
-                <Button
+                </button>
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  className="bg-card/80 text-foreground"
+                  className="text-xs px-3 py-2 rounded-full border border-slate-700 hover:bg-slate-800/50 text-slate-200"
                   onClick={clearAll}
                 >
                   Limpar
-                </Button>
+                </button>
               </div>
-              <Button type="button" variant="default" size="sm" onClick={applySelection}>
+              <button
+                type="button"
+                className="px-3 py-2 text-sm rounded-md bg-emerald-600 hover:bg-emerald-500 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                onClick={applySelection}
+              >
                 Aplicar
-              </Button>
+              </button>
             </div>
           </div>
         </div>
