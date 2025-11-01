@@ -1,91 +1,134 @@
-import { fetchSpotter, type OData } from '@/lib/spotter';
-import { safe } from '@/lib/safe';
+import 'server-only';
 
-function getPeriodStart(months = 12) {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setMonth(date.getMonth() - months);
-  return date.toISOString();
-}
+const BASE = 'https://api.exactspotter.com/v3';
+const TOKEN = process.env.TOKEN_EXACT;
 
-function buildQuery(params?: Record<string, unknown>) {
-  if (!params) return '';
-  const query = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null) return;
-    query.append(key, String(value));
-  });
-  const serialized = query.toString().replace(/\+/g, '%20');
-  return serialized ? `?${serialized}` : '';
-}
+type ODataList<T> = { value: T[]; ['@odata.nextLink']?: string };
 
-async function fetchPaginated<T>(path: string, params?: Record<string, unknown>) {
-  const data: T[] = [];
-  let nextPath: string | null = path;
-  let nextQuery = buildQuery(params);
+const headers = () =>
+  TOKEN
+    ? {
+        'Content-Type': 'application/json',
+        token_exact: TOKEN, // V3 exige este header
+      }
+    : { 'Content-Type': 'application/json' };
 
-  while (nextPath) {
-    const page: OData<T> = await fetchSpotter<T>(nextPath, nextQuery);
-    const values = Array.isArray(page?.value) ? page.value : [];
-    data.push(...values);
-
-    const nextLink = page?.['@odata.nextLink'];
-    if (!nextLink) {
-      nextPath = null;
-      nextQuery = '';
-      continue;
-    }
-
-    if (/^https?:\/\//i.test(nextLink)) {
-      nextPath = nextLink;
-      nextQuery = '';
-    } else {
-      nextPath = nextLink.startsWith('/') ? nextLink : `/${nextLink}`;
-      nextQuery = '';
-    }
+async function fetchJson<T>(endpoint: string): Promise<T> {
+  if (!TOKEN) {
+    console.warn('[Spotter] TOKEN_EXACT ausente');
+    return ([] as unknown) as T;
   }
+  const res = await fetch(`${BASE}${endpoint}`, { headers: headers(), cache: 'no-store' });
+  if (!res.ok) {
 
-  return data;
+    console.warn(`[Spotter] ${res.status} ${res.statusText}: ${endpoint}`);
+    return ([] as unknown) as T;
+  }
+  return res.json();
 }
 
-export async function getLeads(params?: Record<string, unknown>) {
-  return fetchPaginated('/Leads', {
-    $filter: `registerDate ge ${getPeriodStart()}`,
-    ...(params || {}),
+async function fetchPaged<T>(endpoint: string): Promise<T[]> {
+  const all: T[] = [];
+  let url = endpoint;
+  for (let i = 0; i < 200; i++) {
+    const data = await fetchJson<ODataList<T>>(url);
+    if (data?.value) all.push(...data.value);
+    if (!data?.['@odata.nextLink']) break;
+    url = data['@odata.nextLink'].replace(/^https?:\/\/[^/]+\/v3/i, '');
+    await new Promise((r) => setTimeout(r, 800));
+  }
+  return all;
+}
+
+/* ------------------ Endpoints de Dashboard (doc V3) ------------------ */
+// Funil Gerencial
+export async function getFunnelActivity(params: {
+  dataInicial: string;
+  dataFinal: string;
+  funilId?: number;
+}) {
+  const q = new URLSearchParams({
+    datainicial: params.dataInicial,
+    datafinal: params.dataFinal,
+    ...(params.funilId ? { funilId: String(params.funilId) } : {}),
   });
+  return fetchPaged<any>(`/FunnelActivity?${q.toString()}`);
 }
-
-export async function getLeadsSold(params?: Record<string, unknown>) {
-  return fetchPaginated('/LeadsSold', {
-    $select: 'leadId,saleDate,totalDealValue,saleStage',
-    $filter: `saleDate ge ${getPeriodStart()}`,
-    ...(params || {}),
+// Desempenho de Vendas — Vendedores
+export async function getSellerPerformance(params: {
+  dataInicial: string;
+  dataFinal: string;
+  funilId?: number;
+}) {
+  const q = new URLSearchParams({
+    datainicial: params.dataInicial,
+    datafinal: params.dataFinal,
+    ...(params.funilId ? { funilId: String(params.funilId) } : {}),
   });
+  return fetchPaged<any>(`/SellerPerformance?${q.toString()}`);
 }
-
-export async function getLosts(params?: Record<string, unknown>) {
-  return fetchPaginated('/Losts', {
-    $select: 'leadId,date,reason',
-    $filter: `date ge ${getPeriodStart()}`,
-    ...(params || {}),
+// Desempenho de Vendas — Pré-vendedores
+export async function getPreSalesPerformance(params: {
+  dataInicial: string;
+  dataFinal: string;
+  funilId?: number;
+}) {
+  const q = new URLSearchParams({
+    datainicial: params.dataInicial,
+    datafinal: params.dataFinal,
+    ...(params.funilId ? { funilId: String(params.funilId) } : {}),
   });
+  return fetchPaged<any>(`/PreSalesPerformance?${q.toString()}`);
+}
+// Métricas de Vendedores
+export async function getSellersMetrics(params: {
+  dataInicial: string;
+  dataFinal: string;
+  funilId?: number;
+}) {
+  const q = new URLSearchParams({
+    datainicial: params.dataInicial,
+    datafinal: params.dataFinal,
+    ...(params.funilId ? { funilId: String(params.funilId) } : {}),
+  });
+  return fetchPaged<any>(`/SellersMetrics?${q.toString()}`);
+}
+// Previsão de Negócios por Mês ($)
+export async function getMonthlyDealForecast(params: {
+  dataInicial: string;
+  dataFinal: string;
+  funilId?: number;
+}) {
+  const q = new URLSearchParams({
+    datainicial: params.dataInicial,
+    datafinal: params.dataFinal,
+    ...(params.funilId ? { funilId: String(params.funilId) } : {}),
+  });
+  return fetchPaged<any>(`/MonthlyDealForecast?${q.toString()}`);
 }
 
+/* ------------------ Dataset usado hoje nas telas ------------------ */
 export async function getSpotterDataset() {
-  const [{ value: leads }, { value: leadsSold }, { value: losts }] = await Promise.all([
-    safe(fetchSpotter<any>('/Leads', buildQuery({
-      $filter: `registerDate ge ${getPeriodStart()}`,
-    })), { value: [] }),
-    safe(fetchSpotter<any>('/LeadsSold', buildQuery({
-      $select: 'leadId,saleDate,totalDealValue,saleStage',
-      $filter: `saleDate ge ${getPeriodStart()}`,
-    })), { value: [] }),
-    safe(fetchSpotter<any>('/Losts', buildQuery({
-      $select: 'leadId,date,reason',
-      $filter: `date ge ${getPeriodStart()}`,
-    })), { value: [] }),
+  // Ajuste os períodos conforme sua UI (mantendo API estável).
+  const params = { dataInicial: '2025-01-01', dataFinal: '2025-12-31' };
+  const [funnel, sellers, presales, metrics, forecast] = await Promise.all([
+    getFunnelActivity(params),
+    getSellerPerformance(params),
+    getPreSalesPerformance(params),
+    getSellersMetrics(params),
+    getMonthlyDealForecast(params),
   ]);
-
-  return { leads, leadsSold, losts, productsDictionary: [] as any[] };
+  return { funnel, sellers, presales, metrics, forecast };
 }
 
+/* ------------------ Endpoints futuros (somente código, sem UI) ------------------ */
+// Exemplos de brutos: Persons, Leads, Tasks etc. Mantidos prontos p/ consumo futuro.
+export async function listPersonsRaw(query = '?$top=500') {
+  return fetchPaged<any>(`/Persons${query.startsWith('?') ? query : '?' + query}`);
+}
+export async function listLeadsRaw(query = '?$top=500') {
+  return fetchPaged<any>(`/Leads${query.startsWith('?') ? query : '?' + query}`);
+}
+export async function listTasksRaw(query = '?$top=500') {
+  return fetchPaged<any>(`/Tasks${query.startsWith('?') ? query : '?' + query}`);
+}

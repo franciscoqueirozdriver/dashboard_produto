@@ -8,11 +8,32 @@ const currency = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 0,
 });
 
-export const revalidate = 21600;
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const runtime = 'nodejs';
 
 export default async function TicketMedioPage() {
-  const { averageTicketByProduct } = await loadSpotterMetrics();
+  let averageTicketByProduct;
+  try {
+    ({ averageTicketByProduct } = await loadSpotterMetrics());
+  } catch (error) {
+    console.error('[ticket-medio] failed to load spotter metrics:', error);
+    return (
+      <main className="space-y-10 px-12 py-10">
+        <header className="flex flex-col gap-4">
+          <h1 className="text-5xl font-bold tracking-tight">Ticket Médio</h1>
+          <p className="text-xl text-muted-foreground max-w-4xl">
+            Análise do ticket médio por produto e performance de vendas da sua equipe nos últimos 12 meses.
+          </p>
+        </header>
+        <div className="flex items-center justify-center h-96">
+          <p className="text-2xl text-destructive">
+            Não foi possível carregar os dados do Spotter. Verifique o token e tente novamente.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="space-y-10 px-12 py-10">

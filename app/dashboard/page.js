@@ -22,11 +22,33 @@ const percent = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
 });
 
-export const revalidate = 21600;
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const runtime = 'nodejs';
 
 export default async function DashboardPage() {
-  const metrics = await loadSpotterMetrics();
+  let metrics;
+  try {
+    metrics = await loadSpotterMetrics();
+  } catch (error) {
+    console.error('[dashboard] failed to load spotter metrics:', error);
+    return (
+      <main className="space-y-12 px-12 py-10">
+        <header className="flex flex-col gap-4">
+          <h1 className="text-5xl font-bold tracking-tight text-foreground">Painel Geral</h1>
+          <p className="text-xl text-muted-foreground max-w-3xl">
+            Monitoramento em tempo real do funil comercial nos últimos 12 meses com dados oficiais da Exact Spotter.
+          </p>
+        </header>
+        <div className="flex items-center justify-center h-96">
+          <p className="text-2xl text-destructive">
+            Não foi possível carregar os dados do Spotter. Verifique o token e tente novamente.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   const {
     summary,
     performanceLine,
