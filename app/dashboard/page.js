@@ -6,15 +6,15 @@ import { DashboardSkeleton } from '@/components/dashboard-skeleton';
 export const revalidate = 21600;
 export const dynamic = 'force-dynamic';
 
-async function DashboardData() {
-  const allMetrics = await loadDashboardMetrics();
+async function DashboardData({ searchParams }) {
+  const allMetrics = await loadDashboardMetrics(searchParams);
   return <DashboardRotator allMetrics={allMetrics} />;
 }
 
-export default function DashboardPage() {
+export default function DashboardPage({ searchParams }) {
   return (
     <Suspense fallback={<DashboardSkeleton />}>
-      <DashboardData />
+      <DashboardData searchParams={searchParams} />
     </Suspense>
   );
 }

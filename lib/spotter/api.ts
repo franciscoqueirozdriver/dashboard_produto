@@ -2,10 +2,14 @@ import { fetchSpotter, type OData } from '@/lib/spotter';
 import { safe } from '@/lib/safe';
 
 
-export type Period = 'currentMonth' | 'currentYear' | 'last12Months';
+export type Period = 'currentMonth' | 'currentYear' | 'last12Months' | 'custom';
 
-function getPeriod(period: Period = 'last12Months') {
+function getPeriod(period: Period = 'last12Months', from?: string, to?: string) {
   const now = new Date();
+  if (period === 'custom' && from) {
+    return from;
+  }
+
   let startDate: Date;
 
   switch (period) {
@@ -24,6 +28,27 @@ function getPeriod(period: Period = 'last12Months') {
 
   startDate.setHours(0, 0, 0, 0);
   return startDate.toISOString();
+}
+
+function getFilterDate(period: Period = 'last12Months', from?: string, to?: string) {
+  if (period === 'custom' && from && to) {
+    return \`date ge \${from} and date le \${to}\`;
+  }
+  return \`date ge \${getPeriod(period)}\`;
+}
+
+function getLeadFilterDate(period: Period = 'last12Months', from?: string, to?: string) {
+  if (period === 'custom' && from && to) {
+    return \`registerDate ge \${from} and registerDate le \${to}\`;
+  }
+  return \`registerDate ge \${getPeriod(period)}\`;
+}
+
+function getSaleFilterDate(period: Period = 'last12Months', from?: string, to?: string) {
+  if (period === 'custom' && from && to) {
+    return \`saleDate ge \${from} and saleDate le \${to}\`;
+  }
+  return \`saleDate ge \${getPeriod(period)}\`;
 }
 
 function buildQuery(params?: Record<string, unknown>) {
@@ -102,12 +127,12 @@ export async function getProducts(params?: Record<string, unknown>) {
   });
 }
 
-export async function getSpotterDataset(period: Period = 'last12Months') {
+export async function getSpotterDataset(period: Period = 'last12Months', from?: string, to?: string) {
   const funnelFilter = 'funnelId eq 22783';
 
   // Etapa 1: Buscar todos os leads do funil especificado.
   const leads = await safe(fetchPaginated<any>('/Leads', {
-    $filter: `registerDate ge ${getPeriod(period)} and ${funnelFilter}`,
+    $filter: \`\${getLeadFilterDate(period, from, to)} and ${funnelFilter}\`,
   }), []);
 
   // Etapa 2: Extrair IDs dos leads. Se não houver leads, não há necessidade de buscar vendas ou perdas.
@@ -130,11 +155,11 @@ export async function getSpotterDataset(period: Period = 'last12Months') {
   ] = await Promise.all([
     safe(fetchPaginated<any>('/LeadsSold', {
       $select: 'leadId,saleDate,totalDealValue,saleStage,products',
-      $filter: `saleDate ge ${getPeriod(period)} and ${leadIdFilter}`,
+      $filter: \`\${getSaleFilterDate(period, from, to)} and ${leadIdFilter}\`,
     }), []),
     safe(fetchPaginated<any>('/LeadsDiscarded', {
       $select: 'leadId,date,reason',
-      $filter: `date ge ${getPeriod(period)} and ${leadIdFilter}`,
+      $filter: \`\${getFilterDate(period, from, to)} and ${leadIdFilter}\`,
     }), []),
     safe(fetchPaginated<any>('/RecommendedProducts', {
       $filter: leadIdFilter,

@@ -90,7 +90,29 @@ export async function loadSpotterMetrics(period: Period = 'last12Months') {
   return assembleMetrics(dataset);
 }
 
-export async function loadDashboardMetrics() {
+export async function loadSpotterMetricsCustom(from: string, to: string) {
+  const rawData = await safe(getSpotterDataset('custom', from, to), {
+    leads: [],
+    leadsSold: [],
+    losts: [],
+    recommendedProducts: [],
+    products: [],
+  });
+
+  const dataset = buildDataset(rawData);
+  return assembleMetrics(dataset);
+}
+
+export async function loadDashboardMetrics(searchParams: { [key: string]: string | string[] | undefined }) {
+  const from = searchParams.from as string | undefined;
+  const to = searchParams.to as string | undefined;
+
+  if (from && to) {
+    const customPeriod = await loadSpotterMetricsCustom(from, to);
+    return { customPeriod };
+  }
+
+  
   const [currentMonth, currentYear, last12Months] = await Promise.all([
     loadSpotterMetrics('currentMonth'),
     loadSpotterMetrics('currentYear'),
