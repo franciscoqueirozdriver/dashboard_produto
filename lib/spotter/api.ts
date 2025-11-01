@@ -81,7 +81,7 @@ export async function getLeadsSold(period: Period = 'last12Months', params?: Rec
 }
 
 export async function getLosts(period: Period = 'last12Months', params?: Record<string, unknown>) {
-  return fetchPaginated('/Losts', {
+  return fetchPaginated('/LeadsDiscarded', {
     $select: 'leadId,date,reason',
     $filter: `date ge ${getPeriod(period)}`,
     ...(params || {}),
@@ -101,17 +101,22 @@ export async function getProducts(params?: Record<string, unknown>) {
 }
 
 export async function getSpotterDataset(period: Period = 'last12Months') {
+  const funnelFilter = 'funnelId eq 22783';
+  const leadFunnelFilter = 'lead/funnelId eq 22783';
+
   const [{ value: leads }, { value: leadsSold }, { value: losts }, { value: recommendedProducts }, { value: products }] = await Promise.all([
     safe(fetchSpotter<any>('/Leads', buildQuery({
-      $filter: `registerDate ge ${getPeriod(period)}`,
+      $filter: `registerDate ge ${getPeriod(period)} and ${funnelFilter}`,
     })), { value: [] }),
     safe(fetchSpotter<any>('/LeadsSold', buildQuery({
       $select: 'leadId,saleDate,totalDealValue,saleStage,products',
-      $filter: `saleDate ge ${getPeriod(period)}`,
+      $expand: 'lead',
+      $filter: `saleDate ge ${getPeriod(period)} and ${leadFunnelFilter}`,
     })), { value: [] }),
-    safe(fetchSpotter<any>('/Losts', buildQuery({
+    safe(fetchSpotter<any>('/LeadsDiscarded', buildQuery({
       $select: 'leadId,date,reason',
-      $filter: `date ge ${getPeriod(period)}`,
+      $expand: 'lead',
+      $filter: `date ge ${getPeriod(period)} and ${leadFunnelFilter}`,
     })), { value: [] }),
     safe(fetchSpotter<any>('/RecommendedProducts', buildQuery({})), { value: [] }),
     safe(fetchSpotter<any>('/Products', buildQuery({})), { value: [] }),
