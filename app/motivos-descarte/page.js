@@ -1,13 +1,27 @@
+import { Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DiscardReasonsChart } from '@/components/graphs/discard-reasons';
-import { loadSpotterMetrics } from '@/lib/spotter/load';
+import { loadSpotterMetrics } from '@/lib/spotter/load.ts';
+import { CardSkeleton } from '@/components/ui/card-skeleton';
 
 export const revalidate = 21600;
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
-export default async function MotivosDescartePage() {
+async function ChartData() {
   const { discardChartData, discardReasonKeys } = await loadSpotterMetrics();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-2xl font-semibold text-muted-foreground">Motivos por produto</CardTitle>
+      </CardHeader>
+      <CardContent className="h-[600px]">
+        <DiscardReasonsChart data={discardChartData} keys={discardReasonKeys} />
+      </CardContent>
+    </Card>
+  );
+}
 
+export default function MotivosDescartePage() {
   return (
     <main className="space-y-10 px-12 py-10">
       <header className="flex flex-col gap-4">
@@ -17,14 +31,9 @@ export default async function MotivosDescartePage() {
         </p>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl font-semibold text-muted-foreground">Motivos por produto</CardTitle>
-        </CardHeader>
-        <CardContent className="h-[600px]">
-          <DiscardReasonsChart data={discardChartData} keys={discardReasonKeys} />
-        </CardContent>
-      </Card>
+      <Suspense fallback={<CardSkeleton />}>
+        <ChartData />
+      </Suspense>
     </main>
   );
 }
