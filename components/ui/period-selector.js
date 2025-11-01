@@ -7,16 +7,52 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+const PERIOD_OPTIONS = [
+  { label: 'Últimos 7 dias', value: 7 },
+  { label: 'Últimos 30 dias', value: 30 },
+  { label: 'Mês Atual', value: 'month' },
+  { label: 'Ano Atual', value: 'year' },
+];
+
+const getPeriodRange = (value) => {
+  const today = new Date();
+  const range = { from: undefined, to: today };
+
+  if (typeof value === 'number') {
+    const pastDate = new Date();
+    pastDate.setDate(today.getDate() - value);
+    range.from = pastDate;
+  } else if (value === 'month') {
+    range.from = new Date(today.getFullYear(), today.getMonth(), 1);
+  } else if (value === 'year') {
+    range.from = new Date(today.getFullYear(), 0, 1);
+  }
+
+  return range;
+};
 
 export function PeriodSelector({ dateRange, setDateRange, className, onApply }) {
-  const [open, setOpen] = React.useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
 
-  const handleSelect = (range) => {
+  const handlePresetSelect = (value) => {
+    const newRange = getPeriodRange(value);
+    setDateRange(newRange);
+    onApply(newRange);
+  };
+
+  const handleCalendarSelect = (range) => {
     setDateRange(range);
     if (range?.from && range?.to) {
       onApply(range);
-      setOpen(false);
+      setIsCalendarOpen(false);
     }
   };
 
@@ -27,8 +63,8 @@ export function PeriodSelector({ dateRange, setDateRange, className, onApply }) 
     : 'Selecione um período';
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <Button
           variant={'outline'}
           className={cn(
@@ -40,17 +76,34 @@ export function PeriodSelector({ dateRange, setDateRange, className, onApply }) 
           <CalendarIcon className="h-4 w-4" />
           <span>{displayRange}</span>
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
-        <Calendar
-          initialFocus
-          mode="range"
-          defaultMonth={dateRange?.from}
-          selected={dateRange}
-          onSelect={handleSelect}
-          numberOfMonths={2}
-        />
-      </PopoverContent>
-    </Popover>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-80 p-0">
+        {PERIOD_OPTIONS.map((option) => (
+          <DropdownMenuItem
+            key={option.value}
+            onClick={() => handlePresetSelect(option.value)}
+          >
+            {option.label}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => setIsCalendarOpen(true)}>
+          Customizado
+        </DropdownMenuItem>
+
+        {isCalendarOpen && (
+          <div className="p-2">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={dateRange?.from}
+              selected={dateRange}
+              onSelect={handleCalendarSelect}
+              numberOfMonths={1}
+            />
+          </div>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
