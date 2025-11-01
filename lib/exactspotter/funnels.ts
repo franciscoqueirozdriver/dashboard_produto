@@ -8,12 +8,7 @@ const FIVE_MINUTES = 5 * 60 * 1000;
 let cache: FunnelCache = null;
 
 function getToken() {
-  return (
-    process.env.TOKEN_EXACT ??
-    process.env.NEXT_PUBLIC_EXACTSPOTTER_TOKEN ??
-    process.env.NEXT_PUBLIC_TOKEN_EXACT ??
-    ''
-  );
+  return process.env.NEXT_PUBLIC_EXACTSPOTTER_TOKEN ?? '';
 }
 
 export async function fetchActiveFunnels(): Promise<ActiveFunnel[]> {
@@ -24,6 +19,9 @@ export async function fetchActiveFunnels(): Promise<ActiveFunnel[]> {
 
   const token = getToken();
   if (!token) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('ExactSpotter token is missing (NEXT_PUBLIC_EXACTSPOTTER_TOKEN)');
+    }
     return [];
   }
 

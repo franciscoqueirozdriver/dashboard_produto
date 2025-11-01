@@ -14,13 +14,10 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
   const [items, setItems] = React.useState<FunnelItem[]>([]);
-  const [selected, setSelected] = React.useState<number[]>(value ?? []);
+  const applied = React.useMemo(() => (Array.isArray(value) ? value : []), [value]);
+  const [selected, setSelected] = React.useState<number[]>(applied);
   const panelRef = React.useRef<HTMLDivElement | null>(null);
   const triggerRef = React.useRef<HTMLButtonElement | null>(null);
-
-  React.useEffect(() => {
-    setSelected(value ?? []);
-  }, [value]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -75,14 +72,14 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
   };
 
   const resolveLabel = () => {
-    if (selected.length === 0) {
+    if (applied.length === 0) {
       return 'Funis (0)';
     }
-    if (selected.length === 1) {
-      const match = items.find((item) => item.id === selected[0]);
-      return `Funil: ${match?.name ?? selected[0]}`;
+    if (applied.length === 1) {
+      const match = items.find((item) => item.id === applied[0]);
+      return `Funil: ${match?.name ?? applied[0]}`;
     }
-    return `Funis (${selected.length})`;
+    return `Funis (${applied.length})`;
   };
 
   const label = resolveLabel();
@@ -118,6 +115,12 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
       document.removeEventListener('mousedown', handleClick);
     };
   }, [open]);
+
+  React.useEffect(() => {
+    if (open) {
+      setSelected(applied);
+    }
+  }, [open, applied]);
 
   React.useEffect(() => {
     if (open) {

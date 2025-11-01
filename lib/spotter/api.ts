@@ -1,6 +1,5 @@
 import { fetchSpotter, type OData } from '@/lib/spotter';
 import { safe } from '@/lib/safe';
-import { fetchActiveFunnels } from '@/lib/exactspotter/funnels';
 
 
 export type Period = 'currentMonth' | 'currentYear' | 'last12Months' | 'custom';
@@ -134,6 +133,8 @@ export async function getProducts(params?: Record<string, unknown>) {
   });
 }
 
+const DEFAULT_SALES_FUNNEL_ID = 22783;
+
 export async function getSpotterDataset(
   period: Period = 'currentYear',
   from?: string,
@@ -143,8 +144,7 @@ export async function getSpotterDataset(
   let resolvedFunnels = funnelIds;
 
   if (resolvedFunnels === undefined) {
-    const activeFunnels = await fetchActiveFunnels();
-    resolvedFunnels = activeFunnels.map((item) => item.id);
+    resolvedFunnels = [DEFAULT_SALES_FUNNEL_ID];
   }
 
   const funnels = Array.isArray(resolvedFunnels)
