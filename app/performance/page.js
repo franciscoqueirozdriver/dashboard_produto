@@ -4,7 +4,7 @@ import { SalesByMonthChart } from '@/components/graphs/monthly-sales';
 import { loadSpotterMetrics } from '@/lib/spotter/load.ts';
 
 export const revalidate = 21600;
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 export default async function PerformancePage() {
   const { performanceLine, salesByMonth } = await loadSpotterMetrics();
