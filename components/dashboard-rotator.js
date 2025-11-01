@@ -44,6 +44,17 @@ export function DashboardRotator({ allMetrics }) {
   const currentView = VIEWS[currentViewIndex];
   const metrics = allMetrics[currentView.key];
 
+  if (!metrics) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h2 className="text-2xl font-bold mb-4">Dados Não Disponíveis</h2>
+        <p className="text-lg text-gray-400">
+          Não há dados disponíveis para o período: {currentView.title}.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <DashboardContent
