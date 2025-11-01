@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import * as Popover from '@radix-ui/react-popover';
-import { DateRangePicker } from 'react-date-range';
 import {
   addDays,
   endOfMonth,
@@ -19,6 +19,11 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+
+const DateRangePicker = dynamic(
+  () => import('react-date-range').then((mod) => mod.DateRangePicker),
+  { ssr: false }
+);
 
 const SELECTION_KEY = 'selection';
 const localeWithMonday = {
