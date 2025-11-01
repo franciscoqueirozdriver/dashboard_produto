@@ -41,6 +41,7 @@ const getPeriodRange = (value) => {
 
 export function PeriodSelector({ dateRange, setDateRange, className, onApply }) {
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
 
   const handlePresetSelect = (value) => {
     const newRange = getPeriodRange(value);
@@ -63,7 +64,7 @@ export function PeriodSelector({ dateRange, setDateRange, className, onApply }) 
     : 'Selecione um período';
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant={'outline'}
