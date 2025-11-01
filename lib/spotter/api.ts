@@ -102,24 +102,42 @@ export async function getProducts(params?: Record<string, unknown>) {
 
 export async function getSpotterDataset(period: Period = 'last12Months') {
   const funnelFilter = 'funnelId eq 22783';
-  const leadFunnelFilter = 'lead/funnelId eq 22783';
 
-  const [{ value: leads }, { value: leadsSold }, { value: losts }, { value: recommendedProducts }, { value: products }] = await Promise.all([
-    safe(fetchSpotter<any>('/Leads', buildQuery({
-      $filter: `registerDate ge ${getPeriod(period)} and ${funnelFilter}`,
-    })), { value: [] }),
-    safe(fetchSpotter<any>('/LeadsSold', buildQuery({
+  // Etapa 1: Buscar todos os leads do funil especificado.
+  const leads = await safe(fetchPaginated<any>('/Leads', {
+    $filter: `registerDate ge ${getPeriod(period)} and ${funnelFilter}`,
+  }), []);
+
+  // Etapa 2: Extrair IDs dos leads. Se não houver leads, não há necessidade de buscar vendas ou perdas.
+  const leadIds = leads.map((lead: any) => lead.id).filter(Boolean);
+  if (leadIds.length === 0) {
+    const products = await safe(fetchPaginated<any>('/Products'), []);
+    return { leads, leadsSold: [], losts: [], recommendedProducts: [], products };
+  }
+
+  // Garantir que os IDs sejam únicos para a consulta 'in'.
+  const uniqueLeadIds = Array.from(new Set(leadIds));
+  const leadIdFilter = `leadId in (${uniqueLeadIds.join(',')})`;
+
+  // Etapa 3: Buscar dados relacionados (vendas, perdas, produtos) em paralelo usando os IDs dos leads.
+  const [
+    leadsSold,
+    losts,
+    recommendedProducts,
+    products,
+  ] = await Promise.all([
+    safe(fetchPaginated<any>('/LeadsSold', {
       $select: 'leadId,saleDate,totalDealValue,saleStage,products',
-      $expand: 'lead',
-      $filter: `saleDate ge ${getPeriod(period)} and ${leadFunnelFilter}`,
-    })), { value: [] }),
-    safe(fetchSpotter<any>('/LeadsDiscarded', buildQuery({
+      $filter: `saleDate ge ${getPeriod(period)} and ${leadIdFilter}`,
+    }), []),
+    safe(fetchPaginated<any>('/LeadsDiscarded', {
       $select: 'leadId,date,reason',
-      $expand: 'lead',
-      $filter: `date ge ${getPeriod(period)} and ${leadFunnelFilter}`,
-    })), { value: [] }),
-    safe(fetchSpotter<any>('/RecommendedProducts', buildQuery({})), { value: [] }),
-    safe(fetchSpotter<any>('/Products', buildQuery({})), { value: [] }),
+      $filter: `date ge ${getPeriod(period)} and ${leadIdFilter}`,
+    }), []),
+    safe(fetchPaginated<any>('/RecommendedProducts', {
+      $filter: leadIdFilter,
+    }), []),
+    safe(fetchPaginated<any>('/Products'), []),
   ]);
 
   return { leads, leadsSold, losts, recommendedProducts, products };
