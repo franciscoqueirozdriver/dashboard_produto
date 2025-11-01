@@ -1,5 +1,6 @@
 import { fetchSpotter, type OData } from '@/lib/spotter';
 import { safe } from '@/lib/safe';
+import { DEFAULT_SALES_FUNNEL_ID } from '@/lib/funnels/constants';
 
 
 export type Period = 'currentMonth' | 'currentYear' | 'last12Months' | 'custom';
@@ -133,33 +134,17 @@ export async function getProducts(params?: Record<string, unknown>) {
   });
 }
 
-const DEFAULT_SALES_FUNNEL_ID = 22783;
-
 export async function getSpotterDataset(
   period: Period = 'currentYear',
   from?: string,
   to?: string,
   funnelIds?: number[]
 ) {
-  let resolvedFunnels = funnelIds;
+  const normalized = Array.isArray(funnelIds)
+    ? Array.from(new Set(funnelIds.filter((id) => Number.isFinite(id))))
+    : undefined;
 
-  if (resolvedFunnels === undefined) {
-    resolvedFunnels = [DEFAULT_SALES_FUNNEL_ID];
-  }
-
-  const funnels = Array.isArray(resolvedFunnels)
-    ? Array.from(new Set(resolvedFunnels.filter((id) => Number.isFinite(id))))
-    : [];
-
-  if (funnels.length === 0) {
-    return {
-      leads: [],
-      leadsSold: [],
-      losts: [],
-      recommendedProducts: [],
-      products: [],
-    };
-  }
+  const funnels = normalized && normalized.length > 0 ? normalized : [DEFAULT_SALES_FUNNEL_ID];
 
   const leadBatches = await Promise.all(
     funnels.map((funnelId) =>

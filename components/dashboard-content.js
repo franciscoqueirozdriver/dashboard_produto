@@ -11,7 +11,6 @@ import { TopProductsChart } from '@/components/graphs/top-products';
 import { AverageTicketChart } from '@/components/graphs/average-ticket';
 import { DiscardReasonsChart } from '@/components/graphs/discard-reasons';
 import FunnelPickerControl from '@/components/FunnelPickerControl';
-import { FunnelsEmptyState } from '@/components/funnels-empty-state';
 
 const currency = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -30,8 +29,6 @@ export function DashboardContent({
   periodTitle,
   periodDescription,
   selectedFunnels = [],
-  funnelsExplicit = false,
-  hasActiveFunnels = true,
 }) {
   const {
     summary,
@@ -55,12 +52,6 @@ export function DashboardContent({
     },
   ];
 
-  const hasSelection = Array.isArray(selectedFunnels) && selectedFunnels.length > 0;
-  const emptyMessage = hasActiveFunnels
-    ? 'Selecione ao menos um funil para visualizar os dados.'
-    : 'Nenhum funil ativo disponível no momento.';
-  const showEmptyState = !hasSelection && (funnelsExplicit || !hasActiveFunnels);
-
   return (
     <main className="space-y-12 px-12 py-10">
       <header className="flex flex-col gap-4">
@@ -76,81 +67,75 @@ export function DashboardContent({
         </p>
       </header>
 
-      {showEmptyState ? (
-        <FunnelsEmptyState message={emptyMessage} />
-      ) : (
-        <>
-          <section className="grid gap-6 xl:grid-cols-5">
-            <KpiCard title="Total de Vendas" value={summary.totalSales.toLocaleString('pt-BR')} description="Pedidos fechados" />
-            <KpiCard title="Receita Total" value={currency.format(summary.revenue)} description="Valor somado das negociações" />
-            <KpiCard title="Ticket Médio" value={currency.format(summary.averageTicket)} description="Ticket médio por venda" />
-            <KpiCard title="Leads Criados" value={summary.leadsCreated.toLocaleString('pt-BR')} description="Novos leads cadastrados" />
-            <KpiCard
-              title="Status Geral"
-              value={`${statusPercentages[0].value} ganho`}
-              description={`${statusPercentages[1].value} perdidos • ${statusPercentages[2].value} em andamento`}
-            />
-          </section>
+      <section className="grid gap-6 xl:grid-cols-5">
+        <KpiCard title="Total de Vendas" value={summary.totalSales.toLocaleString('pt-BR')} description="Pedidos fechados" />
+        <KpiCard title="Receita Total" value={currency.format(summary.revenue)} description="Valor somado das negociações" />
+        <KpiCard title="Ticket Médio" value={currency.format(summary.averageTicket)} description="Ticket médio por venda" />
+        <KpiCard title="Leads Criados" value={summary.leadsCreated.toLocaleString('pt-BR')} description="Novos leads cadastrados" />
+        <KpiCard
+          title="Status Geral"
+          value={`${statusPercentages[0].value} ganho`}
+          description={`${statusPercentages[1].value} perdidos • ${statusPercentages[2].value} em andamento`}
+        />
+      </section>
 
-          <section className="grid gap-6 lg:grid-cols-2">
-            <MiniChartCard title="Performance Geral" subtitle="Receita consolidada mês a mês">
-              <PerformanceLine data={performanceLine} />
-            </MiniChartCard>
-            <MiniChartCard title="Status por Mês" subtitle="Ganhos, perdas e negociações abertas">
-              <StatusMiniChart data={statusTrend} />
-            </MiniChartCard>
-          </section>
+      <section className="grid gap-6 lg:grid-cols-2">
+        <MiniChartCard title="Performance Geral" subtitle="Receita consolidada mês a mês">
+          <PerformanceLine data={performanceLine} />
+        </MiniChartCard>
+        <MiniChartCard title="Status por Mês" subtitle="Ganhos, perdas e negociações abertas">
+          <StatusMiniChart data={statusTrend} />
+        </MiniChartCard>
+      </section>
 
-          <section className="grid gap-6 xl:grid-cols-3">
-            <Card className="col-span-2">
-              <CardHeader>
-                <CardTitle className="text-2xl font-semibold text-muted-foreground">Performance por Mês (Vendas)</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[320px]">
-                <SalesByMonthChart data={salesByMonth} />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl font-semibold text-muted-foreground">Status por Produto</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[320px]">
-                <StatusByProductChart data={statusByProduct.slice(0, 6)} />
-              </CardContent>
-            </Card>
-          </section>
+      <section className="grid gap-6 xl:grid-cols-3">
+        <Card className="col-span-2">
+          <CardHeader>
+            <CardTitle className="text-2xl font-semibold text-muted-foreground">Performance por Mês (Vendas)</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[320px]">
+            <SalesByMonthChart data={salesByMonth} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl font-semibold text-muted-foreground">Status por Produto</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[320px]">
+            <StatusByProductChart data={statusByProduct.slice(0, 6)} />
+          </CardContent>
+        </Card>
+      </section>
 
-          <section className="grid gap-6 xl:grid-cols-3">
-            <Card className="xl:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-2xl font-semibold text-muted-foreground">Top Produtos Vendidos (R$)</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[360px]">
-                <TopProductsChart data={topProducts.slice(0, 8)} />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl font-semibold text-muted-foreground">Ticket Médio por Produto</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[360px]">
-                <AverageTicketChart data={averageTicketByProduct.slice(0, 8)} />
-              </CardContent>
-            </Card>
-          </section>
+      <section className="grid gap-6 xl:grid-cols-3">
+        <Card className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-2xl font-semibold text-muted-foreground">Top Produtos Vendidos (R$)</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[360px]">
+            <TopProductsChart data={topProducts.slice(0, 8)} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl font-semibold text-muted-foreground">Ticket Médio por Produto</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[360px]">
+            <AverageTicketChart data={averageTicketByProduct.slice(0, 8)} />
+          </CardContent>
+        </Card>
+      </section>
 
-          <section>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl font-semibold text-muted-foreground">Motivos de Descarte por Produto</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[400px]">
-                <DiscardReasonsChart data={discardChartData} keys={discardReasonKeys} />
-              </CardContent>
-            </Card>
-          </section>
-        </>
-      )}
+      <section>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl font-semibold text-muted-foreground">Motivos de Descarte por Produto</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[400px]">
+            <DiscardReasonsChart data={discardChartData} keys={discardReasonKeys} />
+          </CardContent>
+        </Card>
+      </section>
     </main>
   );
 }

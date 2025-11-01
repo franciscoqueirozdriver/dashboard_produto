@@ -28,8 +28,6 @@ export function DashboardRotator({
   allMetrics,
   showFloatingFab = false,
   selectedFunnels = [],
-  funnelsExplicit = false,
-  hasActiveFunnels = true,
 }) {
   const [currentViewIndex, setCurrentViewIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -78,8 +76,6 @@ export function DashboardRotator({
         periodTitle={currentView.title}
         periodDescription={currentView.description}
         selectedFunnels={selectedFunnels}
-        funnelsExplicit={funnelsExplicit}
-        hasActiveFunnels={hasActiveFunnels}
       />
       {/* Botão flutuante para pausar/retomar a rotação (visível apenas em modo debug ou quando solicitado) */}
       {isRotatorEnabled && (showFloatingFab || debugControlsEnabled) && (

@@ -4,7 +4,7 @@ export function readFunnelsFromURL(): number[] {
   }
   const params = new URLSearchParams(window.location.search);
   const raw = params.get('funnels');
-  if (!raw || raw.trim().length === 0 || raw.toLowerCase() === 'none') {
+  if (!raw || raw.trim().length === 0) {
     return [];
   }
   return raw
@@ -19,10 +19,11 @@ export function writeFunnelsToURL(ids: number[]): void {
   }
 
   const url = new URL(window.location.href);
-  if (ids.length === 0) {
-    url.searchParams.set('funnels', 'none');
+  const unique = Array.from(new Set(ids.filter((id) => Number.isFinite(id))));
+
+  if (unique.length === 0) {
+    url.searchParams.delete('funnels');
   } else {
-    const unique = Array.from(new Set(ids.filter((id) => Number.isFinite(id))));
     url.searchParams.set('funnels', unique.join(','));
   }
   window.history.replaceState(null, '', url.toString());

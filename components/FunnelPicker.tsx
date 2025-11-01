@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { fetchActiveFunnels } from '@/lib/exactspotter/funnels';
+import { DEFAULT_SALES_FUNNEL_ID } from '@/lib/funnels/constants';
 
 type FunnelItem = { id: number; name: string };
 
@@ -14,10 +15,16 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
   const [items, setItems] = React.useState<FunnelItem[]>([]);
-  const applied = React.useMemo(() => (Array.isArray(value) ? value : []), [value]);
+  const applied = React.useMemo(() => {
+    const unique = Array.isArray(value)
+      ? Array.from(new Set(value.filter((id) => Number.isFinite(id))))
+      : [];
+    return unique.length > 0 ? unique : [DEFAULT_SALES_FUNNEL_ID];
+  }, [value]);
   const [selected, setSelected] = React.useState<number[]>(applied);
   const panelRef = React.useRef<HTMLDivElement | null>(null);
   const triggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState('');
 
   React.useEffect(() => {
     let mounted = true;
@@ -67,7 +74,13 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
   };
 
   const applySelection = () => {
-    onChange(selected);
+    const unique = Array.from(new Set(selected.filter((id) => Number.isFinite(id))));
+    if (unique.length === 0) {
+      setErrorMessage('Selecione ao menos um funil.');
+      return;
+    }
+    setErrorMessage('');
+    onChange(unique);
     setOpen(false);
   };
 
@@ -77,7 +90,7 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
     }
     if (applied.length === 1) {
       const match = items.find((item) => item.id === applied[0]);
-      return `Funil: ${match?.name ?? applied[0]}`;
+      return match ? `Funil: ${match.name}` : 'Funis (1)';
     }
     return `Funis (${applied.length})`;
   };
@@ -119,6 +132,7 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
   React.useEffect(() => {
     if (open) {
       setSelected(applied);
+      setErrorMessage('');
     }
   }, [open, applied]);
 
@@ -134,7 +148,10 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
         ref={triggerRef}
         type="button"
         className="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800/40 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-        onClick={() => setOpen((state) => !state)}
+        onClick={() => {
+          setErrorMessage('');
+          setOpen((state) => !state);
+        }}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
@@ -206,6 +223,11 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
                 Aplicar
               </button>
             </div>
+            {errorMessage && (
+              <p className="text-xs text-amber-400" role="alert">
+                {errorMessage}
+              </p>
+            )}
           </div>
         </div>
       )}

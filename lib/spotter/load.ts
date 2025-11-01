@@ -1,6 +1,7 @@
 import { safe } from '@/lib/safe';
 import { getSpotterDataset, Period } from '@/lib/spotter/api';
 import { resolveFunnelSelection } from '@/lib/exactspotter/funnels';
+import { DEFAULT_SALES_FUNNEL_ID } from '@/lib/funnels/constants';
 import {
   buildDataset,
   getAverageTicketByProduct,
@@ -87,12 +88,9 @@ function assembleMetrics(dataset) {
 }
 
 export async function loadSpotterMetrics(period: Period = 'currentYear', funnelIds?: number[]) {
-  if (Array.isArray(funnelIds) && funnelIds.length === 0) {
-    return assembleMetrics(buildDataset(EMPTY_DATASET));
-  }
-
   try {
-    const rawData = await safe(getSpotterDataset(period, undefined, undefined, funnelIds), EMPTY_DATASET);
+    const effective = Array.isArray(funnelIds) && funnelIds.length > 0 ? funnelIds : undefined;
+    const rawData = await safe(getSpotterDataset(period, undefined, undefined, effective), EMPTY_DATASET);
 
     const dataset = buildDataset(rawData);
     return assembleMetrics(dataset);
@@ -104,12 +102,9 @@ export async function loadSpotterMetrics(period: Period = 'currentYear', funnelI
 }
 
 export async function loadSpotterMetricsCustom(from: string, to: string, funnelIds?: number[]) {
-  if (Array.isArray(funnelIds) && funnelIds.length === 0) {
-    return assembleMetrics(buildDataset(EMPTY_DATASET));
-  }
-
   try {
-    const rawData = await safe(getSpotterDataset('custom', from, to, funnelIds), EMPTY_DATASET);
+    const effective = Array.isArray(funnelIds) && funnelIds.length > 0 ? funnelIds : undefined;
+    const rawData = await safe(getSpotterDataset('custom', from, to, effective), EMPTY_DATASET);
 
     const dataset = buildDataset(rawData);
     return assembleMetrics(dataset);
@@ -141,45 +136,28 @@ export async function loadDashboardMetrics(
     ? Array.from(new Set(selection.filter((id) => Number.isFinite(id))))
     : [];
 
-  const hasSelection = normalizedSelection.length > 0;
+  const selectedFunnels = normalizedSelection.length > 0
+    ? normalizedSelection
+    : [DEFAULT_SALES_FUNNEL_ID];
 
   if (from && to) {
-    if (!hasSelection) {
-      return {
-        customPeriod: assembleMetrics(buildDataset(EMPTY_DATASET)),
-        selectedFunnels: normalizedSelection,
-        funnelsExplicit: explicit,
-      };
-    }
-
-    const customPeriod = await loadSpotterMetricsCustom(from, to, normalizedSelection);
-    return { customPeriod, selectedFunnels: normalizedSelection, funnelsExplicit: explicit };
+    const customPeriod = await loadSpotterMetricsCustom(from, to, selectedFunnels);
+    return { customPeriod, selectedFunnels, funnelsExplicit: explicit };
   }
 
 
   // Ajustado para usar currentYear como padrão já que dados só existem a partir de 06/2025
-  if (!hasSelection) {
-    const empty = assembleMetrics(buildDataset(EMPTY_DATASET));
-    return {
-      currentMonth: empty,
-      currentYear: empty,
-      last12Months: empty,
-      selectedFunnels: normalizedSelection,
-      funnelsExplicit: explicit,
-    };
-  }
-
   const [currentMonth, currentYear, last12Months] = await Promise.all([
-    loadSpotterMetrics('currentMonth', normalizedSelection),
-    loadSpotterMetrics('currentYear', normalizedSelection),
-    loadSpotterMetrics('currentYear', normalizedSelection), // Usando currentYear em vez de last12Months
+    loadSpotterMetrics('currentMonth', selectedFunnels),
+    loadSpotterMetrics('currentYear', selectedFunnels),
+    loadSpotterMetrics('currentYear', selectedFunnels), // Usando currentYear em vez de last12Months
   ]);
 
   return {
     currentMonth,
     currentYear,
     last12Months,
-    selectedFunnels: normalizedSelection,
+    selectedFunnels,
     funnelsExplicit: explicit,
   };
 }

@@ -5,7 +5,6 @@ import { loadSpotterMetrics } from '@/lib/spotter/load.ts';
 import { CardSkeleton } from '@/components/ui/card-skeleton';
 import { resolveFunnelSelection } from '@/lib/exactspotter/funnels';
 import FunnelPickerControl from '@/components/FunnelPickerControl';
-import { FunnelsEmptyState } from '@/components/funnels-empty-state';
 
 export const revalidate = 21600;
 export const dynamic = 'force-dynamic';
@@ -25,13 +24,7 @@ async function ChartData({ funnels }) {
 }
 
 export default async function MotivosDescartePage({ searchParams }) {
-  const { selectedIds, explicit, available } = await resolveFunnelSelection(searchParams);
-  const hasActive = available.length > 0;
-  const hasSelection = selectedIds.length > 0;
-  const showEmptyState = !hasSelection && (explicit || !hasActive);
-  const emptyMessage = hasActive
-    ? 'Selecione ao menos um funil para visualizar os dados.'
-    : 'Nenhum funil ativo disponível no momento.';
+  const { selectedIds } = await resolveFunnelSelection(searchParams);
 
   return (
     <main className="space-y-10 px-12 py-10">
@@ -45,13 +38,9 @@ export default async function MotivosDescartePage({ searchParams }) {
         </p>
       </header>
 
-      {showEmptyState ? (
-        <FunnelsEmptyState message={emptyMessage} />
-      ) : (
-        <Suspense fallback={<CardSkeleton />}>
-          <ChartData funnels={selectedIds} />
-        </Suspense>
-      )}
+      <Suspense fallback={<CardSkeleton />}>
+        <ChartData funnels={selectedIds} />
+      </Suspense>
     </main>
   );
 }

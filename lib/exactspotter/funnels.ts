@@ -1,4 +1,5 @@
 import { safe } from '@/lib/safe';
+import { DEFAULT_SALES_FUNNEL_ID } from '@/lib/funnels/constants';
 
 export type ActiveFunnel = { id: number; name: string };
 
@@ -20,7 +21,7 @@ export async function fetchActiveFunnels(): Promise<ActiveFunnel[]> {
   const token = getToken();
   if (!token) {
     if (process.env.NODE_ENV !== 'production') {
-      console.warn('ExactSpotter token is missing (NEXT_PUBLIC_EXACTSPOTTER_TOKEN)');
+      console.warn('Missing NEXT_PUBLIC_EXACTSPOTTER_TOKEN for ExactSpotter funnels request');
     }
     return [];
   }
@@ -31,6 +32,7 @@ export async function fetchActiveFunnels(): Promise<ActiveFunnel[]> {
         'Content-Type': 'application/json',
         token_exact: token,
       },
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -90,18 +92,20 @@ export async function resolveFunnelSelection(
   const activeFunnels = await fetchActiveFunnels();
   const activeSet = new Set(activeFunnels.map((item) => item.id));
 
+  const defaultSelection = [DEFAULT_SALES_FUNNEL_ID];
+
   if (explicit) {
-    const filtered = ids.filter((id) => activeSet.has(id));
+    const filtered = ids.filter((id) => (activeSet.size === 0 ? true : activeSet.has(id)));
+    const selection = filtered.length > 0 ? filtered : defaultSelection;
     return {
-      selectedIds: filtered,
+      selectedIds: selection,
       explicit,
       available: activeFunnels,
     };
   }
 
-  const selectedIds = activeFunnels.map((item) => item.id);
   return {
-    selectedIds,
+    selectedIds: defaultSelection,
     explicit,
     available: activeFunnels,
   };

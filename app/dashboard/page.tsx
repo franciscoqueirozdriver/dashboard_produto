@@ -14,17 +14,14 @@ interface DashboardDataProps {
 interface DashboardDataExtraProps {
   funnels: number[];
   explicit: boolean;
-  hasActive: boolean;
 }
 
-async function DashboardData({ searchParams, funnels, explicit, hasActive }: DashboardDataProps & DashboardDataExtraProps) {
+async function DashboardData({ searchParams, funnels, explicit }: DashboardDataProps & DashboardDataExtraProps) {
   const allMetrics = await loadDashboardMetrics(searchParams, funnels, explicit);
   return (
     <DashboardRotator
       allMetrics={allMetrics}
       selectedFunnels={funnels}
-      funnelsExplicit={explicit}
-      hasActiveFunnels={hasActive}
     />
   );
 }
@@ -34,8 +31,7 @@ interface DashboardPageProps {
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const { selectedIds, explicit, available } = await resolveFunnelSelection(searchParams);
-  const hasActive = available.length > 0;
+  const { selectedIds, explicit } = await resolveFunnelSelection(searchParams);
 
   return (
     <Suspense fallback={<DashboardSkeleton />}>
@@ -43,7 +39,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         searchParams={searchParams}
         funnels={selectedIds}
         explicit={explicit}
-        hasActive={hasActive}
       />
     </Suspense>
   );
