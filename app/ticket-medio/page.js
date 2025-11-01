@@ -1,6 +1,8 @@
+import { Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AverageTicketChart } from '@/components/graphs/average-ticket';
 import { loadSpotterMetrics } from '@/lib/spotter/load';
+import { CardSkeleton } from '@/components/ui/card-skeleton';
 
 const currency = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -9,20 +11,12 @@ const currency = new Intl.NumberFormat('pt-BR', {
 });
 
 export const revalidate = 21600;
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
-export default async function TicketMedioPage() {
+async function TicketData() {
   const { averageTicketByProduct } = await loadSpotterMetrics();
-
   return (
-    <main className="space-y-10 px-12 py-10">
-      <header className="flex flex-col gap-4">
-        <h1 className="text-5xl font-bold tracking-tight">Ticket Médio por Produto</h1>
-        <p className="text-xl text-muted-foreground max-w-4xl">
-          Comparativo do valor médio de cada negociação concluída por produto.
-        </p>
-      </header>
-
+    <>
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl font-semibold text-muted-foreground">Ticket médio</CardTitle>
@@ -40,6 +34,23 @@ export default async function TicketMedioPage() {
           </div>
         ))}
       </section>
+    </>
+  );
+}
+
+export default function TicketMedioPage() {
+  return (
+    <main className="space-y-10 px-12 py-10">
+      <header className="flex flex-col gap-4">
+        <h1 className="text-5xl font-bold tracking-tight">Ticket Médio por Produto</h1>
+        <p className="text-xl text-muted-foreground max-w-4xl">
+          Comparativo do valor médio de cada negociação concluída por produto.
+        </p>
+      </header>
+
+      <Suspense fallback={<CardSkeleton />}>
+        <TicketData />
+      </Suspense>
     </main>
   );
 }
