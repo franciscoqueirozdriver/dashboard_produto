@@ -2,13 +2,9 @@
 
 import * as React from 'react';
 import {
-  endOfDay,
   endOfMonth,
   endOfWeek,
-  endOfYear,
   format,
-  isSameDay,
-  startOfDay,
   startOfMonth,
   startOfWeek,
   startOfYear,
@@ -16,8 +12,8 @@ import {
   subMonths,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { DayPicker } from 'react-day-picker';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { DayPicker } from 'react-day-picker';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -27,305 +23,252 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const PRESETS = [
-  { label: 'Hoje', value: 'today' },
-  { label: 'Últimos 7 dias', value: 'last7' },
-  { label: 'Semana Atual', value: 'currentWeek' },
-  { label: 'Últimos 30 dias', value: 'last30' },
-  { label: 'Mês Passado', value: 'lastMonth' },
-  { label: 'Mês Atual', value: 'currentMonth' },
-  { label: 'Ano Atual', value: 'currentYear' },
-];
-
-const getPresetRange = (value) => {
-  const today = new Date();
-  const normalizedToday = startOfDay(today);
-  const endOfToday = endOfDay(today);
-
-  switch (value) {
-    case 'today':
-      return {
-        from: normalizedToday,
-        to: endOfToday,
-      };
-    case 'last7': {
-      const from = startOfDay(subDays(normalizedToday, 6));
-      return { from, to: endOfToday };
-    }
-    case 'currentWeek': {
-      const from = startOfWeek(normalizedToday, { weekStartsOn: 1 });
-      const to = endOfWeek(normalizedToday, { weekStartsOn: 1 });
-      return { from, to };
-    }
-    case 'last30': {
-      const from = startOfDay(subDays(normalizedToday, 29));
-      return { from, to: endOfToday };
-    }
-    case 'lastMonth': {
-      const previousMonth = subMonths(normalizedToday, 1);
-      return {
-        from: startOfMonth(previousMonth),
-        to: endOfMonth(previousMonth),
-      };
-    }
-    case 'currentMonth': {
-      return {
-        from: startOfMonth(normalizedToday),
-        to: endOfMonth(normalizedToday),
-      };
-    }
-    case 'currentYear': {
-      return {
-        from: startOfYear(normalizedToday),
-        to: endOfYear(normalizedToday),
-      };
-    }
-    default:
-      return { from: normalizedToday, to: normalizedToday };
-  }
+const normalizeDate = (value) => {
+  if (!value) return undefined;
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
 };
 
 const normalizeRange = (range) => {
-  if (!range) return range;
-  const from = range?.from ? startOfDay(range.from) : undefined;
-  const to = range?.to ? endOfDay(range.to) : undefined;
-  return { from, to };
+  if (!range) return undefined;
+  const from = normalizeDate(range.from);
+  const to = normalizeDate(range.to);
+
+  if (from && to && from > to) {
+    return { from: to, to: from };
+  }
+
+  if (!from && !to) {
+    return undefined;
+  }
+
+  return { from: from ?? undefined, to: to ?? undefined };
 };
 
-const areRangesEqual = (first, second) => {
-  if (!first?.from || !first?.to || !second?.from || !second?.to) {
-    return false;
-  }
-  return isSameDay(first.from, second.from) && isSameDay(first.to, second.to);
+const isSameDay = (a, b) => {
+  if (!a || !b) return false;
+  return a.getTime() === b.getTime();
+};
+
+const createPresetRange = (factory) => () => normalizeRange(factory());
+
+const PRESETS = [
+  {
+    key: 'today',
+    label: 'Hoje',
+    getRange: createPresetRange(() => {
+      const today = normalizeDate(new Date());
+      return { from: today, to: today };
+    }),
+  },
+  {
+    key: 'last7',
+    label: 'Últimos 7 dias',
+    getRange: createPresetRange(() => {
+      const today = normalizeDate(new Date());
+      return { from: subDays(today, 6), to: today };
+    }),
+  },
+  {
+    key: 'currentWeek',
+    label: 'Semana Atual',
+    getRange: createPresetRange(() => {
+      const today = new Date();
+      const from = normalizeDate(startOfWeek(today, { weekStartsOn: 1 }));
+      const to = normalizeDate(endOfWeek(today, { weekStartsOn: 1 }));
+      return { from, to };
+    }),
+  },
+  {
+    key: 'last30',
+    label: 'Últimos 30 dias',
+    getRange: createPresetRange(() => {
+      const today = normalizeDate(new Date());
+      return { from: subDays(today, 29), to: today };
+    }),
+  },
+  {
+    key: 'lastMonth',
+    label: 'Mês Passado',
+    getRange: createPresetRange(() => {
+      const today = new Date();
+      const lastMonth = subMonths(today, 1);
+      const from = normalizeDate(startOfMonth(lastMonth));
+      const to = normalizeDate(endOfMonth(lastMonth));
+      return { from, to };
+    }),
+  },
+  {
+    key: 'currentMonth',
+    label: 'Mês Atual',
+    getRange: createPresetRange(() => {
+      const today = normalizeDate(new Date());
+      const from = normalizeDate(startOfMonth(today));
+      return { from, to: today };
+    }),
+  },
+  {
+    key: 'currentYear',
+    label: 'Ano Atual',
+    getRange: createPresetRange(() => {
+      const today = normalizeDate(new Date());
+      const from = normalizeDate(startOfYear(today));
+      return { from, to: today };
+    }),
+  },
+];
+
+const findMatchingPreset = (range) => {
+  if (!range?.from || !range?.to) return undefined;
+
+  return PRESETS.find((preset) => {
+    const presetRange = preset.getRange();
+    return (
+      presetRange?.from &&
+      presetRange?.to &&
+      isSameDay(presetRange.from, normalizeDate(range.from)) &&
+      isSameDay(presetRange.to, normalizeDate(range.to))
+    );
+  });
 };
 
 export function PeriodSelector({ dateRange, setDateRange, className, onApply }) {
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
-  const [activePreset, setActivePreset] = React.useState(null);
 
-  React.useEffect(() => {
-    if (!dateRange?.from || !dateRange?.to) {
-      setActivePreset(null);
-      return;
-    }
+  const normalizedSelection = React.useMemo(
+    () => normalizeRange(dateRange),
+    [dateRange]
+  );
 
-    const normalized = normalizeRange(dateRange);
-    const matchedPreset = PRESETS.find((preset) =>
-      areRangesEqual(normalized, getPresetRange(preset.value))
-    );
-
-    setActivePreset(matchedPreset?.value ?? null);
-  }, [dateRange?.from, dateRange?.to]);
-
-  const handlePresetSelect = (preset) => {
-    const nextRange = getPresetRange(preset.value);
-    setActivePreset(preset.value);
-    setDateRange(nextRange);
-    onApply?.(nextRange);
-    setIsDropdownOpen(false);
-  };
-
-  const handleCalendarSelect = (range) => {
-    setActivePreset(null);
-    setDateRange(range);
-
-    if (!range?.from || !range?.to) {
-      return;
-    }
-
-    const normalized = normalizeRange(range);
-    const matchedPreset = PRESETS.find((preset) =>
-      areRangesEqual(normalized, getPresetRange(preset.value))
-    );
-
-    const finalRange = matchedPreset
-      ? getPresetRange(matchedPreset.value)
-      : normalized;
-
-    setActivePreset(matchedPreset?.value ?? null);
-    setDateRange(finalRange);
-    onApply?.(finalRange);
-    setIsDropdownOpen(false);
-  };
-
-  const handleApplyClick = () => {
-    if (!dateRange?.from || !dateRange?.to) {
-      return;
-    }
-
-    const normalized = normalizeRange(dateRange);
-    const matchedPreset = PRESETS.find((preset) =>
-      areRangesEqual(normalized, getPresetRange(preset.value))
-    );
-
-    const finalRange = matchedPreset
-      ? getPresetRange(matchedPreset.value)
-      : normalized;
-
-    setActivePreset(matchedPreset?.value ?? null);
-    setDateRange(finalRange);
-    onApply?.(finalRange);
-    setIsDropdownOpen(false);
-  };
+  const activePreset = React.useMemo(
+    () => findMatchingPreset(normalizedSelection),
+    [normalizedSelection]
+  );
 
   const displayRange = React.useMemo(() => {
     if (activePreset) {
-      const preset = PRESETS.find((item) => item.value === activePreset);
-      if (preset) {
-        return preset.label;
-      }
+      return activePreset.label;
     }
 
-    if (dateRange?.from && dateRange?.to) {
+    if (normalizedSelection?.from && normalizedSelection?.to) {
       return (
-        format(dateRange.from, 'dd/MM/yyyy') +
-        ' - ' +
-        format(dateRange.to, 'dd/MM/yyyy')
+        format(normalizedSelection.from, 'dd/MM/yyyy') +
+        ' – ' +
+        format(normalizedSelection.to, 'dd/MM/yyyy')
       );
     }
 
-    if (dateRange?.from) {
-      return format(dateRange.from, 'dd/MM/yyyy');
+    if (normalizedSelection?.from) {
+      return format(normalizedSelection.from, 'dd/MM/yyyy');
     }
 
     return 'Selecione um período';
-  }, [activePreset, dateRange?.from, dateRange?.to]);
+  }, [activePreset, normalizedSelection]);
 
-  const pickerRange = React.useMemo(() => {
-    if (!dateRange?.from && !dateRange?.to) {
-      return undefined;
+  const handlePresetSelect = (preset) => {
+    const range = preset.getRange();
+    setDateRange(range);
+    onApply(range);
+    setIsDropdownOpen(false);
+  };
+
+  const handleRangeSelect = (range) => {
+    const normalized = normalizeRange(range);
+    setDateRange(normalized);
+
+    if (normalized?.from && normalized?.to) {
+      onApply(normalized);
+      setIsDropdownOpen(false);
     }
+  };
 
-    return {
-      from: dateRange?.from ? startOfDay(dateRange.from) : undefined,
-      to: dateRange?.to ? startOfDay(dateRange.to) : undefined,
-    };
-  }, [dateRange?.from, dateRange?.to]);
+  const handleApply = () => {
+    const normalized = normalizeRange(dateRange);
+    if (normalized?.from && normalized?.to) {
+      setDateRange(normalized);
+      onApply(normalized);
+      setIsDropdownOpen(false);
+    }
+  };
+
+  const defaultMonth = normalizedSelection?.from ?? new Date();
+  const canApply = Boolean(normalizedSelection?.from && normalizedSelection?.to);
 
   return (
     <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
+          size="sm"
           className={cn(
-            'gap-2 justify-start text-left font-normal text-[#e2e8f0] focus-visible:ring-emerald-400',
-            !dateRange?.from && 'text-muted-foreground',
+            'h-10 min-w-[14rem] justify-start gap-2 rounded-xl border-[#243347] bg-[#0e1623] text-left text-sm font-normal text-[#e2e8f0]',
+            !normalizedSelection?.from && 'text-muted-foreground',
             className
           )}
         >
-          <CalendarIcon className="h-4 w-4" />
+          <CalendarIcon className="h-4 w-4 text-emerald-300" aria-hidden="true" />
           <span>{displayRange}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
-        className="w-[560px] max-w-[90vw] rounded-2xl border border-[#243347] bg-[#0f1624] p-4 text-[#e2e8f0] shadow-[0_24px_48px_rgba(4,19,14,0.45)]"
+        sideOffset={12}
+        className="w-[560px] max-w-[90vw] rounded-2xl border border-[#243347] bg-[#0f1624] p-4 text-[#e2e8f0] shadow-xl"
       >
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-            {PRESETS.map((preset) => {
-              const isActive = activePreset === preset.value;
-              return (
-                <button
-                  key={preset.value}
-                  type="button"
-                  className={cn(
-                    'w-full rounded-full border border-emerald-900/40 bg-transparent px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f1624] hover:bg-[#0f2b22]',
-                    isActive && 'border-emerald-500 bg-emerald-500/10 text-emerald-200'
-                  )}
-                  onClick={() => handlePresetSelect(preset)}
-                  aria-pressed={isActive}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="rounded-xl border border-[#243347] bg-[#0e1623] p-3 shadow-inner">
-            <DayPicker
-              mode="range"
-              selected={pickerRange}
-              onSelect={handleCalendarSelect}
-              numberOfMonths={2}
-              weekStartsOn={1}
-              captionLayout="dropdown"
-              locale={ptBR}
-              fromYear={2000}
-              toYear={new Date().getFullYear() + 5}
-              defaultMonth={pickerRange?.from ?? pickerRange?.to ?? new Date()}
-              styles={{
-                root: { color: '#e2e8f0' },
-                caption: { color: '#cbd5f5' },
-                head_cell: { color: '#94a3b8', fontWeight: 500 },
-                nav_button: {
-                  color: '#e2e8f0',
-                  borderRadius: '9999px',
-                },
-                month: { backgroundColor: 'transparent' },
-                day: {
-                  color: '#e2e8f0',
-                  borderRadius: '12px',
-                  transition: 'background-color 0.15s ease',
-                },
-                day_selected: {
-                  backgroundColor: '#10b981',
-                  color: '#04130e',
-                },
-                day_range_start: {
-                  backgroundColor: '#10b981',
-                  color: '#04130e',
-                },
-                day_range_end: {
-                  backgroundColor: '#10b981',
-                  color: '#04130e',
-                },
-                day_range_middle: {
-                  backgroundColor: '#064e3b',
-                  color: '#e2e8f0',
-                },
-                day_disabled: { color: '#475569', opacity: 0.6 },
-                day_outside: { color: '#475569', opacity: 0.5 },
-                nav: { gap: '0.5rem' },
-              }}
-              className={cn(
-                'rdp-dark mx-auto flex flex-col gap-3 text-sm',
-                '[&_.rdp-caption_dropdowns]:flex [&_.rdp-caption_dropdowns]:gap-2 [&_.rdp-caption_dropdowns_select]:rounded-md',
-                '[&_.rdp-caption_dropdowns_select]:border [&_.rdp-caption_dropdowns_select]:border-[#243347]',
-                '[&_.rdp-caption_dropdowns_select]:bg-[#0f1624] [&_.rdp-caption_dropdowns_select]:px-2 [&_.rdp-caption_dropdowns_select]:py-1',
-                '[&_.rdp-caption_dropdowns_select]:text-sm [&_.rdp-caption_dropdowns_select]:text-[#e2e8f0]',
-                '[&_.rdp-caption_dropdowns_select]:focus-visible:outline-none [&_.rdp-caption_dropdowns_select]:focus-visible:ring-2',
-                '[&_.rdp-caption_dropdowns_select]:focus-visible:ring-emerald-400',
-                '[&_.rdp-months]:flex [&_.rdp-months]:flex-row [&_.rdp-months]:justify-center [&_.rdp-months]:gap-6',
-                '[&_.rdp-month]:w-auto',
-                '[&_.rdp-table]:w-full [&_.rdp-table]:border-collapse',
-                '[&_.rdp-day]:h-10 [&_.rdp-day]:w-10'
-              )}
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-2">
-            <Button
+        <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-4">
+          {PRESETS.map((preset) => (
+            <PresetChip
+              key={preset.key}
               type="button"
-              size="sm"
-              variant="outline"
-              className="border border-transparent text-sm text-slate-300 hover:bg-[#0f2b22]"
-              onClick={() => setIsDropdownOpen(false)}
+              onClick={() => handlePresetSelect(preset)}
+              data-active={preset.key === activePreset?.key}
+              aria-pressed={preset.key === activePreset?.key}
             >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              className="bg-emerald-500 px-5 text-sm text-[#04130e] hover:bg-emerald-400 focus-visible:ring-emerald-300"
-              disabled={!dateRange?.from || !dateRange?.to}
-              onClick={handleApplyClick}
-            >
-              Aplicar
-            </Button>
-          </div>
+              {preset.label}
+            </PresetChip>
+          ))}
+        </div>
+
+        <div className="rounded-2xl border border-[#243347] bg-[#0e1623] p-3">
+          <DayPicker
+            mode="range"
+            captionLayout="dropdown"
+            selected={normalizedSelection}
+            onSelect={handleRangeSelect}
+            numberOfMonths={2}
+            weekStartsOn={1}
+            locale={ptBR}
+            showOutsideDays
+            fixedWeeks
+            defaultMonth={defaultMonth}
+          />
+        </div>
+
+        <div className="mt-4 flex justify-end">
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleApply}
+            disabled={!canApply}
+            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-[#04130e] hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Aplicar
+          </Button>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function PresetChip({ className, ...props }) {
+  return (
+    <button
+      {...props}
+      className={cn(
+        'rounded-full border border-emerald-900/40 bg-[#0b1f1a] px-3 py-1.5 text-xs font-medium text-emerald-200 transition-colors hover:bg-[#0f2b22] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-0 data-[active=true]:border-emerald-400 data-[active=true]:bg-emerald-500 data-[active=true]:text-[#04130e]',
+        className
+      )}
+    />
   );
 }
