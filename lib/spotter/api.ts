@@ -1,6 +1,7 @@
 import { fetchSpotter, type OData } from '@/lib/spotter';
 import { safe } from '@/lib/safe';
 
+
 export type Period = 'currentMonth' | 'currentYear' | 'last12Months';
 
 function getPeriod(period: Period = 'last12Months') {
@@ -54,8 +55,9 @@ async function fetchPaginated<T>(path: string, params?: Record<string, unknown>)
     }
 
     if (/^https?:\/\//i.test(nextLink)) {
-      nextPath = nextLink;
-      nextQuery = '';
+      const url = new URL(nextLink);
+      nextPath = url.pathname;
+      nextQuery = url.search;
     } else {
       nextPath = nextLink.startsWith('/') ? nextLink : `/${nextLink}`;
       nextQuery = '';
