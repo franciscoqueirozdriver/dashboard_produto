@@ -31,25 +31,34 @@ export function DashboardRotator({ allMetrics }) {
 
   const isRotatorEnabled = searchParams.get('rotator') !== 'false';
 
+  // Verifica se é período customizado
+  const isCustomPeriod = 'customPeriod' in allMetrics;
+
   useEffect(() => {
-    if (isPaused || !isRotatorEnabled) return;
+    if (isPaused || !isRotatorEnabled || isCustomPeriod) return;
 
     const timer = setInterval(() => {
       setCurrentViewIndex((prevIndex) => (prevIndex + 1) % VIEWS.length);
     }, DEFAULT_DURATION);
 
     return () => clearInterval(timer);
-  }, [isPaused, isRotatorEnabled]);
+  }, [isPaused, isRotatorEnabled, isCustomPeriod]);
 
-  const currentView = VIEWS[currentViewIndex];
+  // Se for período customizado, usa o customPeriod
+  const currentView = isCustomPeriod 
+    ? { key: 'customPeriod', title: 'Período Customizado', description: 'Dados do período selecionado' }
+    : VIEWS[currentViewIndex];
   const metrics = allMetrics[currentView.key];
 
   if (!metrics) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <h2 className="text-2xl font-bold mb-4">Dados Não Disponíveis</h2>
-        <p className="text-lg text-gray-400">
-          Não há dados disponíveis para o período: {currentView.title}.
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
+        <h2 className="text-2xl font-bold mb-4 text-red-500">⚠️ Erro ao Carregar Dados</h2>
+        <p className="text-lg text-muted-foreground">
+          Não foi possível carregar os dados para o período: {currentView.title}.
+        </p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Verifique sua conexão com a API Spotter.
         </p>
       </div>
     );

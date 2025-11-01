@@ -91,7 +91,14 @@ export async function loadSpotterMetrics(period: Period = 'last12Months') {
     return assembleMetrics(dataset);
   } catch (error) {
     console.error(`[METRICS] Failed to load metrics for period: ${period}`, error);
-    return null;
+    // Retorna estrutura vazia em vez de null para evitar erros de renderização
+    return assembleMetrics(buildDataset({
+      leads: [],
+      leadsSold: [],
+      losts: [],
+      recommendedProducts: [],
+      products: [],
+    }));
   }
 }
 
@@ -109,7 +116,14 @@ export async function loadSpotterMetricsCustom(from: string, to: string) {
     return assembleMetrics(dataset);
   } catch (error) {
     console.error(`[METRICS] Failed to load custom metrics from ${from} to ${to}`, error);
-    return null;
+    // Retorna estrutura vazia em vez de null para evitar erros de renderização
+    return assembleMetrics(buildDataset({
+      leads: [],
+      leadsSold: [],
+      losts: [],
+      recommendedProducts: [],
+      products: [],
+    }));
   }
 }
 
