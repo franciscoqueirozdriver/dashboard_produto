@@ -1,5 +1,5 @@
 import { safe } from '@/lib/safe';
-import { getSpotterDataset, Period } from '@/lib/spotter/api';
+import { getFunnelActivity, getSpotterDataset, getStages, Period, Stage } from '@/lib/spotter/api';
 import {
   buildDataset,
   getAverageTicketByProduct,
@@ -87,7 +87,15 @@ export async function loadSpotterMetrics(period: Period = 'last12Months') {
   });
 
   const dataset = buildDataset(rawData);
-  return assembleMetrics(dataset);
+  const metrics = assembleMetrics(dataset);
+
+  const stages = await safe(getStages(), []);
+  const funnelIds = [...new Set(stages.map((s) => s.funnelId).filter(Boolean))];
+  const funnelActivities = await Promise.all(
+    funnelIds.map((funnelId) => safe(getFunnelActivity(period, funnelId), [])),
+  );
+
+  return { ...metrics, funnelActivities };
 }
 
 export async function loadDashboardMetrics() {
