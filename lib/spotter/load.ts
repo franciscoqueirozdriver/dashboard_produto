@@ -77,7 +77,7 @@ function assembleMetrics(dataset) {
   };
 }
 
-export async function loadSpotterMetrics(period: Period = 'last12Months') {
+export async function loadSpotterMetrics(period: Period = 'currentYear') {
   try {
     const rawData = await safe(getSpotterDataset(period), {
       leads: [],
@@ -137,10 +137,11 @@ export async function loadDashboardMetrics(searchParams: { [key: string]: string
   }
 
   
+  // Ajustado para usar currentYear como padrão já que dados só existem a partir de 06/2025
   const [currentMonth, currentYear, last12Months] = await Promise.all([
     loadSpotterMetrics('currentMonth'),
     loadSpotterMetrics('currentYear'),
-    loadSpotterMetrics('last12Months'),
+    loadSpotterMetrics('currentYear'), // Usando currentYear em vez de last12Months
   ]);
 
   return { currentMonth, currentYear, last12Months };

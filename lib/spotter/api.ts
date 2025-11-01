@@ -70,6 +70,12 @@ async function fetchPaginated<T>(path: string, params?: Record<string, unknown>)
   while (nextPath) {
     const page: OData<T> = await fetchSpotter<T>(nextPath, nextQuery);
     const values = Array.isArray(page?.value) ? page.value : [];
+    
+    // Se recebeu 0 items, para a paginação mesmo que haja nextLink
+    if (values.length === 0) {
+      break;
+    }
+    
     data.push(...values);
 
     const nextLink = page?.['@odata.nextLink'];
@@ -127,7 +133,7 @@ export async function getProducts(params?: Record<string, unknown>) {
   });
 }
 
-export async function getSpotterDataset(period: Period = 'last12Months', from?: string, to?: string) {
+export async function getSpotterDataset(period: Period = 'currentYear', from?: string, to?: string) {
   const funnelFilter = 'funnelId eq 22783';
 
   // Etapa 1: Buscar todos os leads do funil especificado.
