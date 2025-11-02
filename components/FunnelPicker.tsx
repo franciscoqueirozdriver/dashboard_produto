@@ -7,7 +7,7 @@ import { DEFAULT_SALES_FUNNEL_ID } from '@/lib/funnels/constants';
 import { readFunnelsFromURL } from '@/lib/url';
 
 type Funnel = { id: number; name: string };
-type FunnelOpt = { value: number; label: string };
+type Opt = { value: number; label: string };
 
 type FunnelPickerProps = {
   value: number[];
@@ -31,7 +31,7 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
     return uniqueUrl.length > 0 ? uniqueUrl : sanitizedProp;
   });
   const [open, setOpen] = React.useState(false);
-  const [options, setOptions] = React.useState<FunnelOpt[]>([]);
+  const [options, setOptions] = React.useState<Opt[]>([]);
   const [sel, setSel] = React.useState<number[]>(() => [...applied]);
 
   React.useEffect(() => {
@@ -73,21 +73,11 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
         if (cancelled) {
           return;
         }
-        const mapped = Array.isArray(payload?.value)
-          ? payload.value
-              .map((item) => ({
-                value: Number(item.id),
-                label: String(item.name ?? ''),
-              }))
-              .filter(
-                (item) =>
-                  Number.isFinite(item.value) && item.label.trim().length > 0
-              )
-          : [];
-        const deduped = Array.from(
-          new Map(mapped.map((item) => [item.value, item])).values()
-        );
-        setOptions(deduped);
+        const mapped = (payload.value ?? []).map((item) => ({
+          value: item.id,
+          label: item.name,
+        }));
+        setOptions(mapped);
       } catch {
         if (!cancelled) {
           setOptions([]);
@@ -134,7 +124,7 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
     const optionMap = new Map(options.map((item) => [item.value, item]));
     return sel
       .map((id) => optionMap.get(id))
-      .filter((item): item is FunnelOpt => Boolean(item));
+      .filter((item): item is Opt => Boolean(item));
   }, [options, sel]);
 
   return (
@@ -165,7 +155,7 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
             value={selectedOptions}
             closeMenuOnSelect={false}
             hideSelectedOptions={false}
-            onChange={(vals: MultiValue<FunnelOpt>) =>
+            onChange={(vals: MultiValue<Opt>) =>
               setSel(Array.from(vals, (item) => item.value))
             }
             placeholder="Buscar/selecionar funis..."
