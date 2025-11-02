@@ -146,31 +146,19 @@ export async function getSpotterDataset(
 
   const funnels = normalized && normalized.length > 0 ? normalized : [DEFAULT_SALES_FUNNEL_ID];
 
-  const leadBatches = await Promise.all(
-    funnels.map((funnelId) =>
-      safe(
-        fetchPaginated<any>('/Leads', {
-          $filter: `${getLeadFilterDate(period, from, to)} and funnelId eq ${funnelId}`,
-        }),
-        []
-      )
-    )
-  );
+  const funnelsFilter = `funnelId in (${funnels.join(',')})`;
 
-  const leadMap = new Map<number, any>();
-  for (const batch of leadBatches) {
-    for (const lead of batch) {
-      const id = lead?.id;
-      if (!Number.isFinite(id)) continue;
-      if (!leadMap.has(id)) {
-        leadMap.set(id, lead);
-      }
-    }
-  }
+  const leadBatches = await Promise.all([
+    safe(
+      fetchPaginated<any>('/Leads', {
+        $filter: `${getLeadFilterDate(period, from, to)} and ${funnelsFilter}`,
+      }),
+      []
+    ),
+  ]);
 
-  const leads = Array.from(leadMap.values());
-
-  const leadIds = Array.from(leadMap.keys());
+  const leads = leadBatches.flat();
+  const leadIds = leads.map((lead: any) => lead.id).filter((id: any) => Number.isFinite(id));
   if (leadIds.length === 0) {
     const products = await safe(fetchPaginated<any>('/Products'), []);
     return { leads, leadsSold: [], losts: [], recommendedProducts: [], products };
@@ -180,28 +168,14 @@ export async function getSpotterDataset(
 
   const lostsPromise = safe(
     (async () => {
-      const pages = await Promise.all(
-        funnels.map((funnelId) =>
-          fetchPaginated<any>('/LeadsDiscarded', {
-            $select:
-              'leadId,date,reason,discardReason,funnelId,funnel,value,productName,source,leadSource',
-            $filter: `${getFilterDate(period, from, to)} and funnelId eq ${funnelId}`,
-          })
-        )
-      );
+      const funnelsFilter = `funnelId in (${funnels.join(',')})`;
+      const pages = await fetchPaginated<any>('/LeadsDiscarded', {
+        $select:
+          'leadId,date,reason,discardReason,funnelId,funnel,value,productName,source,leadSource',
+        $filter: `${getFilterDate(period, from, to)} and ${funnelsFilter}`,
+      });
 
-      const merged = new Map<number, any>();
-      for (const batch of pages) {
-        for (const entry of batch) {
-          const id = Number(entry?.leadId ?? entry?.leadID);
-          if (!Number.isFinite(id)) continue;
-          if (!merged.has(id)) {
-            merged.set(id, entry);
-          }
-        }
-      }
-
-      return Array.from(merged.values());
+      return pages;
     })(),
     []
   );
