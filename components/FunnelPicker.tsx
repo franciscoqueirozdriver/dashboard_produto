@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import * as Popover from '@radix-ui/react-popover';
+import { Button } from '@/components/ui/button';
 import { fetchActiveFunnels } from '@/lib/exactspotter/funnels';
 import { DEFAULT_SALES_FUNNEL_ID } from '@/lib/funnels/constants';
 
@@ -111,14 +112,16 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
   return (
     <Popover.Root open={open} onOpenChange={handleOpenChange}>
       <Popover.Trigger asChild>
-        <button
+        <Button
           type="button"
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800/40 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          variant="outline"
+          size="sm"
+          className="gap-2 bg-card/80 text-foreground"
           aria-haspopup="dialog"
           aria-expanded={open}
         >
           {label}
-        </button>
+        </Button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content

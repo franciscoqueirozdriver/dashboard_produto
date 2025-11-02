@@ -282,7 +282,7 @@ export function PeriodSelector({ dateRange, setDateRange, className, onApply }) 
         variant="outline"
         size="sm"
         className={cn(
-          'gap-2 bg-[#0e1623] text-sm font-medium text-emerald-200 hover:bg-emerald-500/10',
+          'gap-2 bg-card/80 text-foreground',
           className
         )}
         aria-label="Abrir seletor de período"
