@@ -2,114 +2,167 @@
 
 import * as React from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { fetchActiveFunnels } from '@/lib/exactspotter/funnels';
+import Select, { type MultiValue } from 'react-select';
 import { DEFAULT_SALES_FUNNEL_ID } from '@/lib/funnels/constants';
+import { readFunnelsFromURL } from '@/lib/url';
 
-type FunnelItem = { id: number; name: string };
+type Funnel = { id: number; name: string };
+type Opt = { value: number; label: string };
 
 type FunnelPickerProps = {
   value: number[];
-  onChange: (ids: number[]) => void;
+  onChange?: (ids: number[]) => void;
+};
+
+const DEFAULT_FUNNEL_LABEL = 'Vendas';
+
+const sanitizeIds = (input: number[] | undefined | null) => {
+  const unique = Array.isArray(input)
+    ? Array.from(new Set(input.filter((id) => Number.isFinite(id))))
+    : [];
+  return unique.length > 0 ? unique : [DEFAULT_SALES_FUNNEL_ID];
 };
 
 export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
+  const sanitizedProp = React.useMemo(() => sanitizeIds(value), [value]);
+  const [applied, setApplied] = React.useState<number[]>(() => {
+    const fromUrl = readFunnelsFromURL();
+    const uniqueUrl = Array.from(
+      new Set(fromUrl.filter((id) => Number.isFinite(id)))
+    );
+    return uniqueUrl.length > 0 ? uniqueUrl : sanitizedProp;
+  });
   const [open, setOpen] = React.useState(false);
-  const [query, setQuery] = React.useState('');
-  const [items, setItems] = React.useState<FunnelItem[]>([]);
-  const applied = React.useMemo(() => {
-    const unique = Array.isArray(value)
-      ? Array.from(new Set(value.filter((id) => Number.isFinite(id))))
-      : [];
-    return unique.length > 0 ? unique : [DEFAULT_SALES_FUNNEL_ID];
-  }, [value]);
-  const [selected, setSelected] = React.useState<number[]>(applied);
-  const [errorMessage, setErrorMessage] = React.useState('');
+  const [options, setOptions] = React.useState<Opt[]>(() =>
+    sanitizedProp.length === 1 && sanitizedProp[0] === DEFAULT_SALES_FUNNEL_ID
+      ? [{ value: DEFAULT_SALES_FUNNEL_ID, label: DEFAULT_FUNNEL_LABEL }]
+      : []
+  );
+  const [sel, setSel] = React.useState<number[]>(() => [...applied]);
 
   React.useEffect(() => {
-    let mounted = true;
-    fetchActiveFunnels()
-      .then((list) => {
-        if (mounted) {
-          setItems(list);
-        }
-      })
-      .catch(() => {
-        if (mounted) {
-          setItems([]);
-        }
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const filtered = React.useMemo(() => {
-    if (!query) return items;
-    return items.filter((item) =>
-      item.name.toLowerCase().includes(query.toLowerCase())
-    );
-  }, [items, query]);
-
-  const toggle = (id: number) => {
-    setSelected((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : [...current, id]
-    );
-  };
-
-  const selectAll = () => {
-    setSelected((current) => {
-      const union = new Set(current);
-      for (const item of filtered) {
-        union.add(item.id);
+    setApplied((current) => {
+      const next = sanitizedProp;
+      if (
+        current.length === next.length &&
+        current.every((id, index) => id === next[index])
+      ) {
+        return current;
       }
-      return Array.from(union);
+      return next;
     });
-  };
-
-  const clearAll = () => {
-    setSelected((current) => current.filter((id) => !filtered.some((item) => item.id === id)));
-  };
-
-  const applySelection = () => {
-    const unique = Array.from(new Set(selected.filter((id) => Number.isFinite(id))));
-    if (unique.length === 0) {
-      setErrorMessage('Selecione ao menos um funil.');
-      return;
-    }
-    setErrorMessage('');
-    onChange(unique);
-    setOpen(false);
-  };
-
-  const resolveLabel = () => {
-    if (applied.length === 0) {
-      return 'Funis (0)';
-    }
-    if (applied.length === 1) {
-      const match = items.find((item) => item.id === applied[0]);
-      return match ? `Funil: ${match.name}` : 'Funis (1)';
-    }
-    return `Funis (${applied.length})`;
-  };
-
-  const label = resolveLabel();
+  }, [sanitizedProp]);
 
   React.useEffect(() => {
     if (open) {
-      setSelected(applied);
-      setErrorMessage('');
+      setSel(applied);
     }
   }, [open, applied]);
 
-  const handleOpenChange = (next: boolean) => {
-    setErrorMessage('');
-    setOpen(next);
-  };
+  React.useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let cancelled = false;
+
+    fetch('/api/funnels', { cache: 'no-store' })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Failed to load funnels');
+        }
+        return response.json();
+      })
+      .then((payload: { value?: Funnel[] }) => {
+        if (cancelled) return;
+        const mapped = Array.isArray(payload?.value)
+          ? payload.value
+              .map((item) => ({
+                value: Number(item.id),
+                label: String(item.name ?? ''),
+              }))
+              .filter(
+                (item) =>
+                  Number.isFinite(item.value) && item.label.trim().length > 0
+              )
+          : [];
+        const deduped = Array.from(
+          new Map(mapped.map((item) => [item.value, item])).values()
+        );
+        setOptions(deduped);
+      })
+      .catch(() => {
+        if (cancelled) {
+          return;
+        }
+        if (
+          sanitizedProp.length === 1 &&
+          sanitizedProp[0] === DEFAULT_SALES_FUNNEL_ID
+        ) {
+          setOptions([{ value: DEFAULT_SALES_FUNNEL_ID, label: DEFAULT_FUNNEL_LABEL }]);
+        } else {
+          setOptions([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, sanitizedProp]);
+
+  const apply = React.useCallback(() => {
+    if (sel.length === 0) {
+      setOpen(false);
+      return;
+    }
+
+    const unique = Array.from(new Set(sel.filter((id) => Number.isFinite(id))));
+    if (unique.length === 0) {
+      setOpen(false);
+      return;
+    }
+
+    setApplied(unique);
+    onChange?.(unique);
+    setOpen(false);
+  }, [sel, onChange]);
+
+  const cancel = React.useCallback(() => {
+    setSel(applied);
+    setOpen(false);
+  }, [applied]);
+
+  const label = React.useMemo(() => {
+    if (applied.length === 1) {
+      const match =
+        options.find((option) => option.value === applied[0]) ??
+        (applied[0] === DEFAULT_SALES_FUNNEL_ID
+          ? { value: DEFAULT_SALES_FUNNEL_ID, label: DEFAULT_FUNNEL_LABEL }
+          : undefined);
+      return match ? `Funil: ${match.label}` : 'Funil: Selecionado';
+    }
+    return `Funis (${applied.length})`;
+  }, [applied, options]);
+
+  const selectedOptions = React.useMemo(() => {
+    const optionMap = new Map(options.map((item) => [item.value, item]));
+    return sel
+      .map((id) => {
+        if (optionMap.has(id)) {
+          return optionMap.get(id)!;
+        }
+        if (id === DEFAULT_SALES_FUNNEL_ID) {
+          return { value: id, label: DEFAULT_FUNNEL_LABEL } as Opt;
+        }
+        return { value: id, label: `Funil #${id}` } as Opt;
+      })
+      .filter((item, index, array) =>
+        array.findIndex((opt) => opt.value === item.value) === index
+      );
+  }, [options, sel]);
 
   return (
-    <Popover.Root open={open} onOpenChange={handleOpenChange}>
+    <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
         <button
           type="button"
@@ -130,69 +183,82 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
           avoidCollisions
           className="z-[60] w-[440px] rounded-xl border border-slate-700 bg-[#0f1624] p-3 text-slate-200 shadow-xl"
         >
-          <div className="flex flex-col gap-3">
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar funil..."
-              className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            />
-            <div className="max-h-72 overflow-y-auto pr-1">
-              {filtered.length === 0 ? (
-                <div className="rounded-lg bg-slate-900/60 px-3 py-6 text-center text-sm text-slate-400">
-                  Nenhum funil encontrado
-                </div>
-              ) : (
-                <ul className="space-y-1">
-                  {filtered.map((item) => {
-                    const checked = selected.includes(item.id);
-                    return (
-                      <li key={item.id}>
-                        <label className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-slate-900/60">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
-                            checked={checked}
-                            onChange={() => toggle(item.id)}
-                          />
-                          <span className="text-slate-100">{item.name}</span>
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="rounded-full border border-emerald-500/60 px-3 py-2 text-xs text-white hover:bg-emerald-500/10"
-                  onClick={selectAll}
-                >
-                  Selecionar todos
-                </button>
-                <button
-                  type="button"
-                  className="rounded-full border border-emerald-500/60 px-3 py-2 text-xs text-white hover:bg-emerald-500/10"
-                  onClick={clearAll}
-                >
-                  Limpar
-                </button>
-              </div>
-              <button
-                type="button"
-                className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-slate-900 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-                onClick={applySelection}
-              >
-                Aplicar
-              </button>
-            </div>
-            {errorMessage && (
-              <p className="text-xs text-amber-300" role="alert">
-                {errorMessage}
-              </p>
-            )}
+          <Select
+            isMulti
+            options={options}
+            value={selectedOptions}
+            closeMenuOnSelect={false}
+            hideSelectedOptions={false}
+            onChange={(vals: MultiValue<Opt>) =>
+              setSel(Array.from(vals, (item) => item.value))
+            }
+            placeholder="Buscar/selecionar funis..."
+            noOptionsMessage={() => 'Nenhum funil encontrado'}
+            styles={{
+              control: (base, state) => ({
+                ...base,
+                backgroundColor: '#0b1220',
+                borderColor: '#10b981',
+                boxShadow: state.isFocused
+                  ? '0 0 0 2px rgba(16,185,129,.4)'
+                  : 'none',
+                ':hover': { borderColor: '#10b981' },
+                minHeight: 40,
+              }),
+              multiValue: (base) => ({
+                ...base,
+                backgroundColor: 'rgba(16,185,129,.15)',
+              }),
+              multiValueLabel: (base) => ({
+                ...base,
+                color: '#e5e7eb',
+              }),
+              multiValueRemove: (base) => ({
+                ...base,
+                color: '#a7f3d0',
+                ':hover': {
+                  backgroundColor: 'rgba(16,185,129,.25)',
+                  color: '#064e3b',
+                },
+              }),
+              menu: (base) => ({
+                ...base,
+                backgroundColor: '#0f1624',
+                border: '1px solid #334155',
+              }),
+              menuList: (base) => ({
+                ...base,
+                maxHeight: 5 * 42,
+              }),
+              option: (base, state) => ({
+                ...base,
+                backgroundColor: state.isFocused
+                  ? 'rgba(16,185,129,.08)'
+                  : 'transparent',
+                color: '#e5e7eb',
+                ':active': { backgroundColor: 'rgba(16,185,129,.15)' },
+              }),
+              input: (base) => ({ ...base, color: '#e5e7eb' }),
+              placeholder: (base) => ({ ...base, color: '#94a3b8' }),
+              singleValue: (base) => ({ ...base, color: '#e5e7eb' }),
+              indicatorsContainer: (base) => ({ ...base, color: '#e5e7eb' }),
+            }}
+          />
+          <div className="mt-3 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={cancel}
+              className="px-3 py-2 text-sm rounded-md border border-emerald-500 text-white hover:bg-emerald-500/10"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={apply}
+              className="px-3 py-2 text-sm rounded-md bg-emerald-600 hover:bg-emerald-500 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+            >
+              Aplicar
+            </button>
           </div>
         </Popover.Content>
       </Popover.Portal>
