@@ -178,6 +178,34 @@ export async function getSpotterDataset(
 
   const leadIdFilter = `leadId in (${leadIds.join(',')})`;
 
+  const lostsPromise = safe(
+    (async () => {
+      const pages = await Promise.all(
+        funnels.map((funnelId) =>
+          fetchPaginated<any>('/LeadsDiscarded', {
+            $select:
+              'leadId,date,reason,discardReason,funnelId,funnel,value,productName,source,leadSource',
+            $filter: `${getFilterDate(period, from, to)} and funnelId eq ${funnelId}`,
+          })
+        )
+      );
+
+      const merged = new Map<number, any>();
+      for (const batch of pages) {
+        for (const entry of batch) {
+          const id = Number(entry?.leadId ?? entry?.leadID);
+          if (!Number.isFinite(id)) continue;
+          if (!merged.has(id)) {
+            merged.set(id, entry);
+          }
+        }
+      }
+
+      return Array.from(merged.values());
+    })(),
+    []
+  );
+
   const [leadsSold, losts, recommendedProducts, products] = await Promise.all([
     safe(
       fetchPaginated<any>('/LeadsSold', {
@@ -186,13 +214,7 @@ export async function getSpotterDataset(
       }),
       []
     ),
-    safe(
-      fetchPaginated<any>('/LeadsDiscarded', {
-        $select: 'leadId,date,reason',
-        $filter: `${getFilterDate(period, from, to)} and ${leadIdFilter}`,
-      }),
-      []
-    ),
+    lostsPromise,
     safe(
       fetchPaginated<any>('/RecommendedProducts', {
         $filter: leadIdFilter,
