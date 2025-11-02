@@ -10,6 +10,7 @@ import { StatusByProductChart } from '@/components/graphs/status-by-product';
 import { TopProductsChart } from '@/components/graphs/top-products';
 import { AverageTicketChart } from '@/components/graphs/average-ticket';
 import { DiscardReasonsChart } from '@/components/graphs/discard-reasons';
+import FunnelPickerControl from '@/components/FunnelPickerControl';
 
 const currency = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -23,7 +24,12 @@ const percent = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
 });
 
-export function DashboardContent({ metrics, periodTitle, periodDescription }) {
+export function DashboardContent({
+  metrics,
+  periodTitle,
+  periodDescription,
+  selectedFunnels = [],
+}) {
   const {
     summary,
     performanceLine,
@@ -49,10 +55,13 @@ export function DashboardContent({ metrics, periodTitle, periodDescription }) {
   return (
     <main className="space-y-12 px-12 py-10">
       <header className="flex flex-col gap-4">
-        <h1 className="text-5xl font-bold tracking-tight text-foreground">
-          Painel Geral
-          <span className="ml-4 text-3xl text-muted-foreground/80">({periodTitle})</span>
-        </h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-5xl font-bold tracking-tight text-foreground">
+            Painel Geral
+            <span className="ml-4 text-3xl text-muted-foreground/80">({periodTitle})</span>
+          </h1>
+          <FunnelPickerControl value={selectedFunnels} />
+        </div>
         <p className="text-xl text-muted-foreground max-w-3xl">
           {periodDescription}
         </p>

@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import dynamic from 'next/dynamic';
-import * as Popover from '@radix-ui/react-popover';
 import {
   addDays,
   endOfMonth,
@@ -132,6 +131,8 @@ function isSameDayRange(a, b) {
 export function PeriodSelector({ dateRange, setDateRange, className, onApply }) {
   const [open, setOpen] = React.useState(false);
   const pendingStartRef = React.useRef(null);
+  const panelRef = React.useRef(null);
+  const triggerRef = React.useRef(null);
 
   const normalizedSelection = React.useMemo(() => {
     return (
@@ -153,6 +154,44 @@ export function PeriodSelector({ dateRange, setDateRange, className, onApply }) 
   React.useEffect(() => {
     if (!open) {
       pendingStartRef.current = null;
+    }
+  }, [open]);
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    const handleKey = (event) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+
+    const handleClickOutside = (event) => {
+      if (!panelRef.current) return;
+      if (
+        event.target instanceof Node &&
+        panelRef.current !== event.target &&
+        !panelRef.current.contains(event.target) &&
+        triggerRef.current !== event.target &&
+        !triggerRef.current?.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKey);
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open]);
+
+  React.useEffect(() => {
+    if (open) {
+      panelRef.current?.focus();
     }
   }, [open]);
 
@@ -237,27 +276,30 @@ export function PeriodSelector({ dateRange, setDateRange, className, onApply }) 
   );
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn(
-            'gap-2 bg-[#0e1623] text-sm font-medium text-emerald-200 hover:bg-emerald-500/10',
-            className
-          )}
-          aria-label="Abrir seletor de período"
-        >
-          <CalendarIcon className="h-4 w-4" />
-          <span>{buttonLabel}</span>
-        </Button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          side="bottom"
-          align="start"
-          sideOffset={8}
-          className="w-[720px] max-w-[95vw] rounded-xl border border-[#243347] bg-[#0f1624] p-4 text-slate-200 shadow-xl focus:outline-none"
+    <div className="relative inline-flex">
+      <Button
+        ref={triggerRef}
+        variant="outline"
+        size="sm"
+        className={cn(
+          'gap-2 bg-[#0e1623] text-sm font-medium text-emerald-200 hover:bg-emerald-500/10',
+          className
+        )}
+        aria-label="Abrir seletor de período"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((state) => !state)}
+      >
+        <CalendarIcon className="h-4 w-4" />
+        <span>{buttonLabel}</span>
+      </Button>
+      {open && (
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          tabIndex={-1}
+          className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-[720px] max-w-[95vw] rounded-xl border border-[#243347] bg-[#0f1624] p-4 text-slate-200 shadow-xl focus:outline-none"
         >
           <div className="flex flex-wrap gap-2 pb-3">
             {presetFactories.map((preset) => (
@@ -293,8 +335,8 @@ export function PeriodSelector({ dateRange, setDateRange, className, onApply }) 
               Aplicar
             </button>
           </div>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        </div>
+      )}
+    </div>
   );
 }

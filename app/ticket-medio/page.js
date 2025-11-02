@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AverageTicketChart } from '@/components/graphs/average-ticket';
 import { loadSpotterMetrics } from '@/lib/spotter/load';
 import { CardSkeleton } from '@/components/ui/card-skeleton';
+import { resolveFunnelSelection } from '@/lib/exactspotter/funnels';
+import FunnelPickerControl from '@/components/FunnelPickerControl';
 
 const currency = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -13,8 +15,8 @@ const currency = new Intl.NumberFormat('pt-BR', {
 export const revalidate = 21600;
 export const dynamic = 'force-dynamic';
 
-async function TicketData() {
-  const { averageTicketByProduct } = await loadSpotterMetrics();
+async function TicketData({ funnels }) {
+  const { averageTicketByProduct } = await loadSpotterMetrics('currentYear', funnels);
   return (
     <>
       <Card>
@@ -38,18 +40,23 @@ async function TicketData() {
   );
 }
 
-export default function TicketMedioPage() {
+export default async function TicketMedioPage({ searchParams }) {
+  const { selectedIds } = await resolveFunnelSelection(searchParams);
+
   return (
     <main className="space-y-10 px-12 py-10">
       <header className="flex flex-col gap-4">
-        <h1 className="text-5xl font-bold tracking-tight">Ticket Médio por Produto</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-5xl font-bold tracking-tight">Ticket Médio por Produto</h1>
+          <FunnelPickerControl value={selectedIds} />
+        </div>
         <p className="text-xl text-muted-foreground max-w-4xl">
           Comparativo do valor médio de cada negociação concluída por produto.
         </p>
       </header>
 
       <Suspense fallback={<CardSkeleton />}>
-        <TicketData />
+        <TicketData funnels={selectedIds} />
       </Suspense>
     </main>
   );
