@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import * as Popover from '@radix-ui/react-popover';
 import { fetchActiveFunnels } from '@/lib/exactspotter/funnels';
 import { DEFAULT_SALES_FUNNEL_ID } from '@/lib/funnels/constants';
 
@@ -22,8 +23,6 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
     return unique.length > 0 ? unique : [DEFAULT_SALES_FUNNEL_ID];
   }, [value]);
   const [selected, setSelected] = React.useState<number[]>(applied);
-  const panelRef = React.useRef<HTMLDivElement | null>(null);
-  const triggerRef = React.useRef<HTMLButtonElement | null>(null);
   const [errorMessage, setErrorMessage] = React.useState('');
 
   React.useEffect(() => {
@@ -98,83 +97,48 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
   const label = resolveLabel();
 
   React.useEffect(() => {
-    if (!open) return;
-
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    };
-
-    const handleClick = (event: MouseEvent) => {
-      if (!panelRef.current) return;
-      if (
-        event.target instanceof Node &&
-        panelRef.current !== event.target &&
-        !panelRef.current.contains(event.target) &&
-        triggerRef.current !== event.target &&
-        !triggerRef.current?.contains(event.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleKey);
-    document.addEventListener('mousedown', handleClick);
-
-    return () => {
-      document.removeEventListener('keydown', handleKey);
-      document.removeEventListener('mousedown', handleClick);
-    };
-  }, [open]);
-
-  React.useEffect(() => {
     if (open) {
       setSelected(applied);
       setErrorMessage('');
     }
   }, [open, applied]);
 
-  React.useEffect(() => {
-    if (open) {
-      panelRef.current?.focus();
-    }
-  }, [open]);
+  const handleOpenChange = (next: boolean) => {
+    setErrorMessage('');
+    setOpen(next);
+  };
 
   return (
-    <div className="relative inline-flex">
-      <button
-        ref={triggerRef}
-        type="button"
-        className="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800/40 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-        onClick={() => {
-          setErrorMessage('');
-          setOpen((state) => !state);
-        }}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        {label}
-      </button>
-      {open && (
-        <div
-          ref={panelRef}
-          role="dialog"
-          aria-modal="true"
-          tabIndex={-1}
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[420px] rounded-2xl border border-slate-800 bg-card p-4 text-foreground shadow-xl outline-none"
+    <Popover.Root open={open} onOpenChange={handleOpenChange}>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800/40 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+        >
+          {label}
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="bottom"
+          align="start"
+          sideOffset={8}
+          collisionPadding={12}
+          avoidCollisions
+          className="z-[60] w-[440px] rounded-xl border border-slate-700 bg-[#0f1624] p-3 text-slate-200 shadow-xl outline-none"
         >
           <div className="flex flex-col gap-3">
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar funil..."
-              className="w-full rounded-lg border border-slate-700 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
             />
             <div className="max-h-72 overflow-y-auto pr-1">
               {filtered.length === 0 ? (
-                <div className="rounded-lg bg-muted/60 px-3 py-6 text-center text-sm text-muted-foreground">
+                <div className="rounded-lg bg-slate-900/60 px-3 py-6 text-center text-sm text-slate-400">
                   Nenhum funil encontrado
                 </div>
               ) : (
@@ -183,14 +147,14 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
                     const checked = selected.includes(item.id);
                     return (
                       <li key={item.id}>
-                        <label className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-muted/60">
+                        <label className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-slate-900/60">
                           <input
                             type="checkbox"
-                            className="h-4 w-4 rounded border-slate-600 bg-background text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                            className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
                             checked={checked}
                             onChange={() => toggle(item.id)}
                           />
-                          <span className="text-foreground">{item.name}</span>
+                          <span className="text-slate-100">{item.name}</span>
                         </label>
                       </li>
                     );
@@ -202,14 +166,14 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  className="text-xs px-3 py-2 rounded-full border border-slate-700 bg-slate-900 hover:bg-slate-800/60 text-slate-200"
+                  className="rounded-full border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/60"
                   onClick={selectAll}
                 >
                   Selecionar todos
                 </button>
                 <button
                   type="button"
-                  className="text-xs px-3 py-2 rounded-full border border-slate-700 hover:bg-slate-800/50 text-slate-200"
+                  className="rounded-full border border-slate-700 px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/50"
                   onClick={clearAll}
                 >
                   Limpar
@@ -217,20 +181,20 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
               </div>
               <button
                 type="button"
-                className="px-3 py-2 text-sm rounded-md bg-emerald-600 hover:bg-emerald-500 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-slate-900 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                 onClick={applySelection}
               >
                 Aplicar
               </button>
             </div>
             {errorMessage && (
-              <p className="text-xs text-amber-400" role="alert">
+              <p className="text-xs text-amber-300" role="alert">
                 {errorMessage}
               </p>
             )}
           </div>
-        </div>
-      )}
-    </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }

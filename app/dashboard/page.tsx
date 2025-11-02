@@ -18,12 +18,7 @@ interface DashboardDataExtraProps {
 
 async function DashboardData({ searchParams, funnels, explicit }: DashboardDataProps & DashboardDataExtraProps) {
   const allMetrics = await loadDashboardMetrics(searchParams, funnels, explicit);
-  return (
-    <DashboardRotator
-      allMetrics={allMetrics}
-      selectedFunnels={funnels}
-    />
-  );
+  return <DashboardRotator allMetrics={allMetrics} />;
 }
 
 interface DashboardPageProps {
