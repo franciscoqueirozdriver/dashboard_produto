@@ -4,7 +4,6 @@ import { TopProductsChart } from '@/components/graphs/top-products';
 import { loadSpotterMetrics } from '@/lib/spotter/load';
 import { CardSkeleton } from '@/components/ui/card-skeleton';
 import { resolveFunnelSelection } from '@/lib/exactspotter/funnels';
-import FunnelPickerControl from '@/components/FunnelPickerControl';
 
 const currency = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -49,9 +48,8 @@ export default async function TopProdutosPage({ searchParams }) {
   return (
     <main className="space-y-10 px-12 py-10">
       <header className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <h1 className="text-5xl font-bold tracking-tight">Top Produtos Vendidos</h1>
-          <FunnelPickerControl value={selectedIds} />
         </div>
         <p className="text-xl text-muted-foreground max-w-4xl">
           Ranking de faturamento por produto considerando o valor real das vendas.

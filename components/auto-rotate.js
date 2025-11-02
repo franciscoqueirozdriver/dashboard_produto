@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Calendar, PauseCircle, PlayCircle } from 'lucide
 import { PeriodSelector } from '@/components/ui/period-selector';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import FunnelPickerControl from '@/components/FunnelPickerControl';
 
 const DEFAULT_ORDER = [
   { path: '/dashboard', seconds: 60 },
@@ -109,6 +110,18 @@ export default function AutoRotate({ children }) {
     router.replace(queryString ? `${pathname}?${queryString}` : pathname);
   }, [router, pathname, searchParams]);
 
+  const selectedFunnels = useMemo(() => {
+    const raw = searchParams.get('funnels');
+    if (!raw) {
+      return [];
+    }
+
+    return raw
+      .split(',')
+      .map((value) => Number.parseInt(value.trim(), 10))
+      .filter((value) => Number.isFinite(value));
+  }, [searchParams]);
+
   const togglePause = () => {
     if (isPaused) {
       setIsPaused(false);
@@ -121,49 +134,54 @@ export default function AutoRotate({ children }) {
   return (
     <div className="relative min-h-screen">
       {children}
-      <div className="pointer-events-none fixed top-6 right-6 z-50 flex gap-2">
-        <PeriodSelector
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-          onApply={handlePeriodChange}
-          className="pointer-events-auto"
-        />
-        <Button
-          onClick={goPrevious}
-          size="sm"
-          variant="outline"
-          className="pointer-events-auto gap-2 bg-card/80 text-foreground"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          Voltar
-        </Button>
-        <Button
-          onClick={goNext}
-          size="sm"
-          variant="outline"
-          className="pointer-events-auto gap-2 bg-card/80 text-foreground"
-        >
-          <ArrowRight className="h-5 w-5" />
-          Avançar
-        </Button>
-        <Button
-          onClick={togglePause}
-          size="sm"
-          variant="outline"
-          className="pointer-events-auto gap-2 bg-card/80 text-foreground"
-        >
-          {isPaused ? (
-            <>
-              <PlayCircle className="h-5 w-5" />
-              Retomar
-            </>
-          ) : (
-            <>
-              <PauseCircle className="h-5 w-5" />
-              Pausar
-            </>
-          )}
-        </Button>
+      <div className="pointer-events-none fixed top-6 right-6 z-50">
+        <div className="pointer-events-auto flex items-center gap-2">
+          <PeriodSelector
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            onApply={handlePeriodChange}
+            className="pointer-events-auto"
+          />
+          <FunnelPickerControl value={selectedFunnels} />
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={goPrevious}
+              size="sm"
+              variant="outline"
+              className="pointer-events-auto gap-2 bg-card/80 text-foreground"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              Voltar
+            </Button>
+            <Button
+              onClick={goNext}
+              size="sm"
+              variant="outline"
+              className="pointer-events-auto gap-2 bg-card/80 text-foreground"
+            >
+              <ArrowRight className="h-5 w-5" />
+              Avançar
+            </Button>
+            <Button
+              onClick={togglePause}
+              size="sm"
+              variant="outline"
+              className="pointer-events-auto gap-2 bg-card/80 text-foreground"
+            >
+              {isPaused ? (
+                <>
+                  <PlayCircle className="h-5 w-5" />
+                  Retomar
+                </>
+              ) : (
+                <>
+                  <PauseCircle className="h-5 w-5" />
+                  Pausar
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
