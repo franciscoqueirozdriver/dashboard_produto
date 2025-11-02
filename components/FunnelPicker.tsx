@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { Button } from '@/components/ui/button';
 import { fetchActiveFunnels } from '@/lib/exactspotter/funnels';
 import { DEFAULT_SALES_FUNNEL_ID } from '@/lib/funnels/constants';
 
@@ -112,16 +111,15 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
   return (
     <Popover.Root open={open} onOpenChange={handleOpenChange}>
       <Popover.Trigger asChild>
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="sm"
-          className="gap-2 bg-card/80 text-foreground"
+          className="inline-flex items-center gap-2 rounded-md border border-emerald-500 px-4 py-2 text-sm text-white hover:bg-emerald-500/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
           aria-haspopup="dialog"
           aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
         >
           {label}
-        </Button>
+        </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
@@ -130,7 +128,7 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
           sideOffset={8}
           collisionPadding={12}
           avoidCollisions
-          className="z-[60] w-[440px] rounded-xl border border-slate-700 bg-[#0f1624] p-3 text-slate-200 shadow-xl outline-none"
+          className="z-[60] w-[440px] rounded-xl border border-slate-700 bg-[#0f1624] p-3 text-slate-200 shadow-xl"
         >
           <div className="flex flex-col gap-3">
             <input
@@ -169,14 +167,14 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  className="rounded-full border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/60"
+                  className="rounded-full border border-emerald-500/60 px-3 py-2 text-xs text-white hover:bg-emerald-500/10"
                   onClick={selectAll}
                 >
                   Selecionar todos
                 </button>
                 <button
                   type="button"
-                  className="rounded-full border border-slate-700 px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/50"
+                  className="rounded-full border border-emerald-500/60 px-3 py-2 text-xs text-white hover:bg-emerald-500/10"
                   onClick={clearAll}
                 >
                   Limpar
