@@ -113,7 +113,7 @@ export default function FunnelPicker({ value, onChange }: FunnelPickerProps) {
       <Popover.Trigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-md border border-emerald-500 px-4 py-2 text-sm text-white hover:bg-emerald-500/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          className="inline-flex items-center gap-2 rounded-md border border-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
           aria-haspopup="dialog"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
